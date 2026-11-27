@@ -1,7 +1,7 @@
 # Pure Lyrics
 
 A floating desktop widget that shows DMS's own synced lyrics view: word-by-word fill, spring
-scrolling, lines that grow into the centre, accent colours from the cover art.
+scrolling, lines that grow into the centre, fill in the DMS theme colour.
 
 Fork of [lildengzi/pureLyrics](https://github.com/lildengzi/pureLyrics). Version 2 drops the
 plugin's own fetching and rendering. `lyrics/` holds a copy of DMS 2.1.2's `LyricsOverlay`,
