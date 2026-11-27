@@ -332,37 +332,55 @@ Item {
                 }
                 readonly property real feather: width > 0 ? lead / width : 0
                 readonly property color restColor: !lyricsPart.timed && lyricsPart.sung ? lyricsPart.fillColor : lyricsPart.restColor
-                // Word being sung, as a [start, end] span of the row; the previous one settles as it rises.
-                readonly property bool floating: root.floatWords && root.promoted && root.animationsEnabled && lyricsPart.timed && !lyricsPart.part.background
-                readonly property int word: {
-                    if (!floating)
-                        return -1;
-                    const segments = modelData.segments;
-                    for (let i = 0; i < segments.length; i++)
-                        if (root.shownClock >= segments[i].t && root.shownClock < segments[i].e)
-                            return i;
-                    return -1;
+                // Floating words rise letter by letter at the singer's pace. With the smooth sweep the lift
+                // rides the fill edge; without it the fill steps per word, so on each cue the lift crosses
+                // the word being sung over that word's own sung time (a held word rises slowly).
+                readonly property bool floating: root.floatWords && root.animationsEnabled && lyricsPart.timed && !lyricsPart.part.background
+                property real liftEdge: -1
+                function retarget() {
+                    if (!floating || width <= 0)
+                        return;
+                    if (root.sweep) {
+                        liftAnimation.stop();
+                        liftEdge = edge;
+                        return;
+                    }
+                    const at = root.shownClock;
+                    const segment = modelData.segments.find(s => at >= s.t && at < s.e);
+                    liftAnimation.stop();
+                    if (segment) {
+                        liftAnimation.from = Math.max(liftEdge, segment.x0 / width);
+                        liftAnimation.to = segment.x1 / width;
+                        liftAnimation.duration = Math.max(1, (segment.e - at) * 1000);
+                        liftAnimation.easing.type = Easing.Linear;
+                    } else {
+                        liftAnimation.from = liftEdge;
+                        liftAnimation.to = edge;
+                        liftAnimation.duration = 200;
+                        liftAnimation.easing.type = Easing.OutCubic;
+                    }
+                    liftAnimation.start();
                 }
-                property point current: Qt.point(2, 2)
-                property point previous: Qt.point(2, 2)
-                property real rise: 0
-                function span(i) {
-                    const segment = modelData.segments[i];
-                    return segment && width > 0 ? Qt.point(Math.max(0, segment.x0) / width, segment.x1 / width) : Qt.point(2, 2);
-                }
-                onWordChanged: {
-                    previous = current;
-                    current = span(word);
-                    rise = 0;
-                    riseAnimation.restart();
+                onEdgeChanged: retarget()
+                Connections {
+                    target: root
+                    enabled: row.floating && !root.sweep
+                    function onShownClockChanged() {
+                        row.retarget();
+                    }
                 }
                 NumberAnimation {
-                    id: riseAnimation
+                    id: liftAnimation
                     target: row
-                    property: "rise"
-                    to: 1
-                    duration: 260
-                    easing.type: Easing.OutBack
+                    property: "liftEdge"
+                    paused: running && !root.playing
+                }
+                property real floatAmount: floating && root.promoted ? 1 : 0
+                Behavior on floatAmount {
+                    NumberAnimation {
+                        duration: root.moveDuration
+                        easing.type: Easing.InOutSine
+                    }
                 }
 
                 x: Math.round(lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2)
@@ -423,10 +441,9 @@ Item {
                     property real edge: row.edge
                     property real feather: row.feather
                     property real rtl: lyricsPart.rtl ? 1 : 0
-                    property real lift: 0.06
-                    property real rise: row.rise
-                    property point current: row.current
-                    property point previous: row.previous
+                    property real lift: 0.07 * row.floatAmount
+                    property real liftEdge: row.liftEdge
+                    property real ramp: row.width > 0 ? lyricsPart.layout.rowHeight * 0.9 / row.width : 0
                     fragmentShader: Qt.resolvedUrl("../shaders/lyrics_float.frag.qsb")
 
                     Behavior on restColor {

@@ -215,6 +215,16 @@ PluginSettings {
                         }
 
                         SliderSetting {
+                            settingKey: "lineSpacing"
+                            label: I18n.tr("Line spacing")
+                            description: I18n.tr("Space between the middle line and the others (negative pulls them closer)")
+                            defaultValue: 0
+                            minimum: -40
+                            maximum: 80
+                            unit: "px"
+                        }
+
+                        SliderSetting {
                             settingKey: "activeWeight"
                             label: I18n.tr("Active line weight")
                             description: I18n.tr("Boldness of the line being sung (400 regular, 700 bold, 900 black)")
@@ -267,7 +277,7 @@ PluginSettings {
                         ToggleSetting {
                             settingKey: "floatWords"
                             label: I18n.tr("Floating words")
-                            description: I18n.tr("The word being sung lifts and brightens, then settles back")
+                            description: I18n.tr("Sung words lift along the fill with a soft light at its edge; the line settles when done")
                             defaultValue: true
                         }
 

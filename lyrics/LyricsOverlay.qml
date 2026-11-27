@@ -29,6 +29,7 @@ FocusScope {
     property bool oneLine: false
     property bool clickToSeek: true
     property real textScale: 1
+    property real lineSpacing: 0
     // Bottom of the centred line, in this item's coordinates; the widget puts its player there.
     property real centreHeight: 0
     readonly property real focusBottom: transcript.y + transcript.height / 2 + centreHeight / 2
@@ -403,6 +404,7 @@ FocusScope {
                 id: transcript
 
                 anchors.fill: parent
+                spacing: root.lineSpacing
                 fadeEdges: false
                 showScrollBar: false
                 clip: true

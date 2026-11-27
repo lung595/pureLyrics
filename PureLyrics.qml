@@ -31,6 +31,7 @@ DesktopPluginComponent {
     readonly property real depthBlur: (pluginData.depthBlur ?? 40) / 100
     readonly property bool floatWords: pluginData.floatWords ?? true
     readonly property real textScale: (pluginData.textScale ?? 140) / 100
+    readonly property real lineSpacing: pluginData.lineSpacing ?? 0
     // Other lines size, relative to the middle line; layout keeps full-size rows, so capped at 100%.
     readonly property real restScale: (pluginData.restScale ?? 80) / 100
 
@@ -69,6 +70,7 @@ DesktopPluginComponent {
         oneLine: root.oneLine
         clickToSeek: root.clickToSeek
         textScale: root.textScale
+        lineSpacing: root.lineSpacing
         restScale: root.restScale
         depthBlur: root.depthBlur
         floatWords: root.floatWords
@@ -88,8 +90,8 @@ DesktopPluginComponent {
     // Previous, play/pause, next under the lyrics, M3 expressive buttons in the DMS theme colours.
     Row {
         id: transport
-        // Just under the sung line, over the next ones while shown; kept inside the widget.
-        y: Math.max(0, Math.min(overlay.focusBottom + Theme.spacingM, root.height - height - Theme.spacingS))
+        // Under the sung line (a fifth of the space below lower), over the next ones while shown; kept inside the widget.
+        y: Math.max(0, Math.min(overlay.focusBottom + Theme.spacingM + Math.max(0, root.height - overlay.focusBottom - height) * 0.2, root.height - height - Theme.spacingS))
         Behavior on y {
             NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
         }
