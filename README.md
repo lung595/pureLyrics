@@ -21,7 +21,7 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 
 DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top, four tabs:
 
-- **Text**: font (any installed family, or the DMS font), active line weight, other lines weight,
+- **Text**: font (any installed family, or the DMS font), text size, active line weight, other lines weight,
   one line mode
 - **Effects**: cover and title header until the first line, text shadow (on by default),
   active line glow (animates every frame), smooth sweep

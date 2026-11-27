@@ -28,6 +28,7 @@ FocusScope {
     property bool glow: false
     property bool oneLine: false
     property bool clickToSeek: true
+    property real textScale: 1
 
     readonly property var controller: root.lyrics ?? LyricsService.controller
     readonly property bool ready: controller.state === "ready"
@@ -56,7 +57,7 @@ FocusScope {
     readonly property real shapeInset: Math.ceil(Math.min(radius, width / 2, height / 2) * (1 - Math.SQRT1_2))
     readonly property bool compact: content.height < Theme.listItemTwoLineHeight * 2
     readonly property real breakSize: Math.round(leadFontSize * DashMetrics.lyricsBreakIndicatorScale)
-    readonly property real leadFontSize: Math.round(Math.max(Theme.fontSizeXLarge, Math.min(Theme.fontSizeDisplay, transcript.height / DashMetrics.lyricsLeadHeightDivisor, transcript.width / DashMetrics.lyricsLeadWidthDivisor)))
+    readonly property real leadFontSize: Math.round(textScale * Math.max(Theme.fontSizeXLarge, Math.min(Theme.fontSizeDisplay, transcript.height / DashMetrics.lyricsLeadHeightDivisor, transcript.width / DashMetrics.lyricsLeadWidthDivisor)))
     // The ends leave room for half a single row line, so scrolling stops with the first or last line centred.
     readonly property real endPadding: synced ? Math.max(0, transcript.height / 2 - (leadFontMetrics.lineHeight + Theme.spacingS * 2) / 2) : Theme.spacingS
     readonly property real edgeFade: Math.min(transcript.height * DashMetrics.lyricsEdgeFadeRatio, DashMetrics.lyricsEdgeFadeMax)

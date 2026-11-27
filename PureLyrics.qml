@@ -27,6 +27,7 @@ DesktopPluginComponent {
     readonly property bool showPlayer: pluginData.showPlayer ?? true
     readonly property real playerOpacity: (pluginData.playerOpacity ?? 100) / 100
     readonly property bool clickToSeek: pluginData.clickToSeek ?? true
+    readonly property real textScale: (pluginData.textScale ?? 140) / 100
 
     implicitWidth: 600
     implicitHeight: 260
@@ -63,6 +64,7 @@ DesktopPluginComponent {
         glow: root.glow
         oneLine: root.oneLine
         clickToSeek: root.clickToSeek
+        textScale: root.textScale
     }
 
     // Previous, play/pause, next under the lyrics, M3 expressive buttons in the DMS theme colours.

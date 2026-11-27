@@ -10,6 +10,24 @@ PluginSettings {
     id: root
     pluginId: "pureLyricsPlus"
 
+    // DMS only reloads its direct children; the settings here sit inside tabs, so reload them all.
+    function reloadNested(item) {
+        for (const child of item.children) {
+            if (child.settingKey !== undefined && child.loadValue)
+                child.loadValue();
+            else
+                reloadNested(child);
+        }
+    }
+    onPluginServiceChanged: if (pluginService) Qt.callLater(reloadNested, scope)
+    Connections {
+        target: root.pluginService
+        function onPluginDataChanged(changedPluginId) {
+            if (changedPluginId === root.pluginId)
+                Qt.callLater(root.reloadNested, scope);
+        }
+    }
+
     QtObject {
         id: view
         property string current: "text"
@@ -174,6 +192,16 @@ PluginSettings {
                             description: I18n.tr("Font of the lyrics. Sources and player follow DMS Settings → Media.")
                             defaultValue: ""
                             options: [{ label: I18n.tr("DMS font"), value: "" }].concat(Qt.fontFamilies())
+                        }
+
+                        SliderSetting {
+                            settingKey: "textScale"
+                            label: I18n.tr("Text size")
+                            description: I18n.tr("Size of the lyrics, relative to the widget size (100 = DMS dash size)")
+                            defaultValue: 140
+                            minimum: 60
+                            maximum: 250
+                            unit: "%"
                         }
 
                         SliderSetting {
