@@ -286,10 +286,11 @@ Item {
         readonly property bool lit: root.lit || (sung && root.shownClock < part.e)
         // Duets keep a colour per singer, a single voice takes the first one.
         readonly property color accent: {
+            // One theme colour per singer; tertiary second, since secondary is often a greyer primary.
             if (part.chorus)
-                return Theme.primary;
+                return Theme.secondary;
             if (part.side !== 0)
-                return [Theme.primary, Theme.secondary, Theme.tertiary][part.voiceIndex % 3];
+                return [Theme.primary, Theme.tertiary, Theme.secondary][part.voiceIndex % 3];
             return Theme.primary;
         }
         // While browsing every line rests in the same colour, so the playing one reads by its fill alone.

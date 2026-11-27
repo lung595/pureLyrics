@@ -33,6 +33,9 @@ DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top
 Lyrics synced per line only (no word timings from the provider) get word timings estimated from
 word length, so they still fill word by word.
 
+With several singers (lyrics that name voices, e.g. TTML), each singer takes a theme colour:
+primary, tertiary, then secondary; group parts take secondary.
+
 Instrumental breaks show DMS's wavy ring filling up until the next line.
 
 After updating the plugin, restart DMS (`dms restart`): Quickshell keeps the old `lyrics/` types
