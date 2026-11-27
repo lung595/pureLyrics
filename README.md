@@ -21,7 +21,10 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 
 DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top, four tabs:
 
-- **Text**: font (any installed family, or the DMS font), middle line size, other lines size, line spacing, active line weight, other lines weight,
+- **Text**: font (any installed family, or the DMS font), alignment (auto, left, centre, right, or
+  follow the widget's side of the screen), singers on their side in duets, singer name chip (when
+  the singer changes, while they sing, on hover, off), middle line size, other lines size, pyramid
+  (each line further out is smaller), line spacing, active line weight, other lines weight,
   one line mode
 - **Effects**: cover and title header until the first line, depth blur on the lines around the
   sung one, floating sung word, text shadow (on by default),

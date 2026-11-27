@@ -30,6 +30,14 @@ FocusScope {
     property bool clickToSeek: true
     property real textScale: 1
     property real lineSpacing: 0
+    property string textAlign: "auto"
+    property bool duetSides: true
+    property string singerName: "change"
+    property bool pointerOver: false
+    property real pyramid: 0
+    function leadVoice(index) {
+        return items[index]?.group?.parts.find(part => !part.background)?.voice;
+    }
     // Bottom of the centred line, in this item's coordinates; the widget puts its player there.
     property real centreHeight: 0
     readonly property real focusBottom: transcript.y + transcript.height / 2 + centreHeight / 2
@@ -488,6 +496,20 @@ FocusScope {
                     breakSize: root.breakSize
                     seekable: root.clickToSeek
                     restScale: root.restScale
+                    textAlign: root.textAlign
+                    duetSides: root.duetSides
+                    singerName: root.singerName
+                    pointerOver: root.pointerOver
+                    pyramid: root.pyramid
+                    before: index < root.centreItem
+                    previousVoice: {
+                        for (let i = index - 1; i >= 0; i--) {
+                            const voice = root.leadVoice(i);
+                            if (voice !== undefined)
+                                return voice;
+                        }
+                        return "";
+                    }
                     depth: Math.abs(index - root.centreItem)
                     depthBlur: root.depthBlur
                     floatWords: root.floatWords

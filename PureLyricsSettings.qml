@@ -215,6 +215,16 @@ PluginSettings {
                         }
 
                         SliderSetting {
+                            settingKey: "pyramid"
+                            label: I18n.tr("Pyramid")
+                            description: I18n.tr("Each line further from the sung one gets this much smaller (0 = all other lines the same size)")
+                            defaultValue: 15
+                            minimum: 0
+                            maximum: 40
+                            unit: "%"
+                        }
+
+                        SliderSetting {
                             settingKey: "lineSpacing"
                             label: I18n.tr("Line spacing")
                             description: I18n.tr("Space between the middle line and the others (negative pulls them closer)")
@@ -240,6 +250,40 @@ PluginSettings {
                             defaultValue: 500
                             minimum: 300
                             maximum: 900
+                        }
+
+                        SelectionSetting {
+                            settingKey: "textAlign"
+                            label: I18n.tr("Alignment")
+                            description: I18n.tr("Auto: centred, each singer on their side in duets. Follow widget: left or right by where the widget sits on the screen.")
+                            defaultValue: "auto"
+                            options: [
+                                { label: I18n.tr("Auto"), value: "auto" },
+                                { label: I18n.tr("Left"), value: "left" },
+                                { label: I18n.tr("Centre"), value: "center" },
+                                { label: I18n.tr("Right"), value: "right" },
+                                { label: I18n.tr("Follow widget"), value: "follow" }
+                            ]
+                        }
+
+                        ToggleSetting {
+                            settingKey: "duetSides"
+                            label: I18n.tr("Singers on their side")
+                            description: I18n.tr("In duets the first singer goes left and the second right, whatever the alignment")
+                            defaultValue: true
+                        }
+
+                        SelectionSetting {
+                            settingKey: "singerName"
+                            label: I18n.tr("Singer name")
+                            description: I18n.tr("Name chip over the sung line, in the singer's colour. Needs lyrics that name voices (TTML).")
+                            defaultValue: "change"
+                            options: [
+                                { label: I18n.tr("When the singer changes"), value: "change" },
+                                { label: I18n.tr("While they sing"), value: "singing" },
+                                { label: I18n.tr("On hover"), value: "hover" },
+                                { label: I18n.tr("Off"), value: "off" }
+                            ]
                         }
 
                         ToggleSetting {

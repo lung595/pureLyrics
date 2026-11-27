@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Mpris
 import qs.Common
@@ -34,6 +35,21 @@ DesktopPluginComponent {
     readonly property real lineSpacing: pluginData.lineSpacing ?? 0
     // Other lines size, relative to the middle line; layout keeps full-size rows, so capped at 100%.
     readonly property real restScale: (pluginData.restScale ?? 80) / 100
+    readonly property string textAlign: pluginData.textAlign ?? "auto"
+    readonly property bool duetSides: pluginData.duetSides ?? true
+    readonly property string singerName: pluginData.singerName ?? "change"
+    readonly property real pyramid: (pluginData.pyramid ?? 15) / 100
+    // "follow": aligned toward the screen edge the widget sits on (its window is placed at the widget).
+    readonly property string resolvedAlign: {
+        if (textAlign !== "follow")
+            return textAlign;
+        const window = QsWindow.window;
+        const screenWidth = window?.screen?.width ?? 0;
+        if (screenWidth <= 0)
+            return "center";
+        const centre = ((window.margins?.left ?? 0) + width / 2) / screenWidth;
+        return centre < 0.4 ? "left" : centre > 0.6 ? "right" : "center";
+    }
 
     implicitWidth: 600
     implicitHeight: 260
@@ -74,6 +90,11 @@ DesktopPluginComponent {
         restScale: root.restScale
         depthBlur: root.depthBlur
         floatWords: root.floatWords
+        textAlign: root.resolvedAlign
+        duetSides: root.duetSides
+        singerName: root.singerName
+        pointerOver: hover.hovered
+        pyramid: root.pyramid
     }
 
     // With playerOnHover the buttons show while the pointer is over the widget and leave 1 s after it.

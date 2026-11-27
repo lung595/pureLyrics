@@ -57,6 +57,39 @@ Item {
     readonly property font backgroundFont: backgroundMetrics?.font ?? Qt.font({})
 
     property bool seekable: true
+    // pureLyrics: "left", "center", "right" or "auto" (centred, singers on their side); duetSides keeps
+    // the singers on their side in every mode. singerName: "change", "singing", "hover" or "off".
+    property string textAlign: "auto"
+    property bool duetSides: true
+    property string singerName: "change"
+    property bool pointerOver: false
+    // Lead voice of the line before, to name a singer only when the voice changes.
+    property string previousVoice: ""
+    // Pyramid: each line further from the sung one shrinks by this much more, toward the sung line.
+    property real pyramid: 0
+    property bool before: false
+    readonly property real shrinkScale: restScale * Math.pow(1 - pyramid, Math.max(0, depth - 1))
+    function originFor(alignment) {
+        if (alignment === Text.AlignLeft)
+            return before ? Item.BottomLeft : Item.TopLeft;
+        if (alignment === Text.AlignRight)
+            return before ? Item.BottomRight : Item.TopRight;
+        return before ? Item.Bottom : Item.Top;
+    }
+
+    function alignFor(part) {
+        if (part.side !== 0 && (duetSides || textAlign === "auto"))
+            return (part.side < 0) !== LyricsModel.isRtl(part.x) ? Text.AlignLeft : Text.AlignRight;
+        return textAlign === "left" ? Text.AlignLeft : textAlign === "right" ? Text.AlignRight : Text.AlignHCenter;
+    }
+    // One theme colour per singer; tertiary second, since secondary is often a greyer primary.
+    function accentFor(part) {
+        if (part.chorus)
+            return Theme.secondary;
+        if (part.side !== 0)
+            return [Theme.primary, Theme.tertiary, Theme.secondary][part.voiceIndex % 3];
+        return Theme.primary;
+    }
     property real depth: 0
     property real depthBlur: 0
     property bool floatWords: false
@@ -209,10 +242,12 @@ Item {
             id: breakLoader
 
             y: Theme.spacingS
-            width: parent.width
+            x: root.textAlign === "left" ? 0 : root.textAlign === "right" ? parent.width - width : (parent.width - width) / 2
+            width: root.breakSize
             height: root.breakSize
             active: root.isBreak
-            scale: root.shrunk ? root.restScale : 1
+            scale: root.shrunk ? root.shrinkScale : 1
+            transformOrigin: root.originFor(root.textAlign === "left" ? Text.AlignLeft : root.textAlign === "right" ? Text.AlignRight : Text.AlignHCenter)
 
             Behavior on scale {
                 enabled: root.animationsEnabled
@@ -258,7 +293,7 @@ Item {
                 color: Theme.onSurfaceVariant
                 font.pixelSize: root.leadFontSize
                 font.weight: Theme.fontWeightMedium
-                horizontalAlignment: Text.AlignHCenter
+                horizontalAlignment: root.textAlign === "left" ? Text.AlignLeft : root.textAlign === "right" ? Text.AlignRight : Text.AlignHCenter
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                 Accessible.ignored: true
             }
@@ -272,6 +307,92 @@ Item {
         }
     }
 
+    // Singer name: a tonal chip over the sung line, on the singer's side and in their colour. Kept
+    // outside the face, whose layer would clip anything above the line.
+    Repeater {
+        model: root.singerName === "off" ? [] : root.layouts
+
+        Item {
+            id: chip
+
+            required property var modelData
+            readonly property var part: modelData.part
+            readonly property int alignment: root.alignFor(part)
+            readonly property color accent: root.accentFor(part)
+            readonly property bool named: !part.background && !!part.voiceName && (part.side !== 0 || part.chorus)
+            property bool fresh: false
+            readonly property bool shown: named && root.promoted && root.following && (root.singerName === "singing" || root.singerName === "hover" && root.pointerOver || root.singerName === "change" && fresh)
+
+            x: alignment === Text.AlignLeft ? 0 : alignment === Text.AlignRight ? root.width - width : (root.width - width) / 2
+            y: Theme.spacingS + modelData.y - height - Theme.spacingXS
+            width: pill.width
+            height: pill.height
+            opacity: shown ? 1 : 0
+            visible: opacity > 0
+            transform: Translate {
+                y: root.shift + (chip.shown ? 0 : Theme.spacingXS)
+                Behavior on y {
+                    enabled: root.animationsEnabled
+                    NumberAnimation {
+                        duration: Theme.expressiveDurations.expressiveEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                    }
+                }
+            }
+
+            Behavior on opacity {
+                enabled: root.animationsEnabled
+                NumberAnimation {
+                    duration: chip.shown ? 220 : 500
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            // Named once when the voice changes, then it fades.
+            Connections {
+                target: root
+                function onPromotedChanged() {
+                    chip.fresh = root.promoted && chip.part.voice !== root.previousVoice;
+                    if (chip.fresh)
+                        freshTimer.restart();
+                }
+            }
+            Timer {
+                id: freshTimer
+                interval: 2200
+                onTriggered: chip.fresh = false
+            }
+
+            Rectangle {
+                id: pill
+                width: label.implicitWidth + dot.width + Theme.spacingS * 3
+                height: label.implicitHeight + Theme.spacingXS * 2
+                radius: height / 2
+                color: Theme.withAlpha(Theme.surfaceContainerHighest, 0.85)
+
+                Rectangle {
+                    id: dot
+                    x: Theme.spacingS
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 6
+                    height: 6
+                    radius: 3
+                    color: chip.accent
+                }
+                StyledText {
+                    id: label
+                    x: dot.x + dot.width + Theme.spacingXS + 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: chip.part.voiceName
+                    font.pixelSize: Theme.fontSizeSmall
+                    font.weight: Font.Medium
+                    color: chip.accent
+                }
+            }
+        }
+    }
+
     component LyricsPart: Item {
         id: lyricsPart
 
@@ -280,19 +401,12 @@ Item {
         readonly property var part: layout.part
         readonly property bool timed: part.w.length > 0
         readonly property bool rtl: LyricsModel.isRtl(part.x)
-        readonly property int alignment: part.side === 0 ? Text.AlignHCenter : (part.side < 0) !== rtl ? Text.AlignLeft : Text.AlignRight
+        readonly property int alignment: root.alignFor(part)
         readonly property bool sung: root.shownClock >= part.t
         // A background part can still be sung after its line left the centre.
         readonly property bool lit: root.lit || (sung && root.shownClock < part.e)
         // Duets keep a colour per singer, a single voice takes the first one.
-        readonly property color accent: {
-            // One theme colour per singer; tertiary second, since secondary is often a greyer primary.
-            if (part.chorus)
-                return Theme.secondary;
-            if (part.side !== 0)
-                return [Theme.primary, Theme.tertiary, Theme.secondary][part.voiceIndex % 3];
-            return Theme.primary;
-        }
+        readonly property color accent: root.accentFor(part)
         // While browsing every line rests in the same colour, so the playing one reads by its fill alone.
         readonly property color restColor: lit && root.following ? Theme.withAlpha(accent, DashMetrics.lyricsRestAlpha) : root.restingColor
         readonly property color fillColor: lit ? accent : root.restingColor
@@ -300,7 +414,9 @@ Item {
         height: layout.rows.length * layout.rowHeight
         // A background part still being sung keeps its size while the rest of its line shrinks. A lead
         // part that is still finishing as the next line moves in shrinks with its line.
-        scale: root.shrunk && !(part.background && root.clock >= part.t && root.clock < part.e) ? root.restScale : 1
+        scale: root.shrunk && !(part.background && root.clock >= part.t && root.clock < part.e) ? root.shrinkScale : 1
+        // Shrinks toward its aligned edge, so a left or right aligned column keeps one straight edge.
+        transformOrigin: root.originFor(alignment)
         LayoutMirroring.enabled: false
         LayoutMirroring.childrenInherit: true
 
@@ -361,7 +477,19 @@ Item {
                     return out;
                 }
 
-                x: Math.round(lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2)
+                // Opening or closing punctuation hangs past the aligned edge, so the letters line up.
+                readonly property real hang: lyricsPart.rtl ? 0 : lyricsPart.alignment === Text.AlignLeft ? -opening.advanceWidth : lyricsPart.alignment === Text.AlignRight ? closing.advanceWidth : 0
+                TextMetrics {
+                    id: opening
+                    font: glyphs.font
+                    text: /^[(\[“‘"'«¿¡]/.test(row.modelData.text) ? row.modelData.text[0] : ""
+                }
+                TextMetrics {
+                    id: closing
+                    font: glyphs.font
+                    text: /[)\]”’"'»,.]$/.test(row.modelData.text) ? row.modelData.text[row.modelData.text.length - 1] : ""
+                }
+                x: Math.round(hang + (lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2))
                 y: index * lyricsPart.layout.rowHeight
                 width: modelData.width
                 height: lyricsPart.layout.rowHeight
