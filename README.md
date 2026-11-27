@@ -57,24 +57,32 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 
 ## Settings
 
-DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top, four tabs:
+DMS Settings → Desktop Widgets → Pure Lyrics. Search with Ctrl+F (Esc clears). Options that do
+nothing in the current setup stay hidden: player options while the buttons are off, the other
+lines' options in one-line mode. **Reset to defaults** sits at the bottom (click twice).
 
 <img src="docs/media/settings.png" alt="The plugin's settings page twice: the Text tab with font and size sliders, and the Player tab with the buttons switch, the player position menu, show on hover and opacity" width="100%">
 
-- **Text**: font (any installed family, or the DMS font), alignment (auto, left, centre, right, or
-  follow the widget's side of the screen), singers on their side in duets, singer name chip (the artist and featured artists when the lyrics do not name voices; when
-  the singer changes, while they sing, on hover, off), middle line size, other lines size, pyramid
-  (each line further out is smaller), distance fade (each line further out is fainter), line spacing, active line weight, other lines weight,
-  one line mode
-- **Effects**: cover and title header until the first line (on the lyrics' side when they are
-  aligned left or right), depth blur on the lines around the
-  sung one, floating sung word, text shadow (on by default),
-  active line glow (animates every frame), smooth sweep
-- **Player**: previous / play-pause / next buttons, in a row under the sung line (centre, left,
-  right, or the lyrics' side) or in a column beside it (left or right, centred on the sung line;
-  shown always, the lines beside it step aside, those just past it half as far, with an adjustable gap). Shown on hover or always, their opacity (below 100%
-  they blur what is behind them when DMS blur is on), click a line to seek
-- **Background**: background and border opacity
+- **Text**
+  - *Font*: font (any installed family, or the DMS font), sung line size, sung line weight
+  - *Layout*: alignment (auto, left, centre, right, or follow the widget's side of the screen),
+    duet sides (first singer left, second right, when not on Auto), one line
+  - *Other lines*: size, weight, shrink with distance (pyramid), fade with distance, spacing
+- **Player**
+  - *Buttons*: previous / play-pause / next, shown on hover or always, position (a row under the
+    sung line: centre, left, right or the lyrics' side; or a column beside it, left or right),
+    column gap (for a column shown always: the lines beside it step aside), opacity (below 100%
+    they blur what is behind them when DMS blur is on)
+  - *Seek*: click a line to seek
+- **Style**
+  - *Motion*: floating words, smooth sweep (redraws every frame while a line is sung)
+  - *Depth*: depth blur on the lines around the sung one, text shadow (on by default), glow
+    (animates every frame)
+  - *Card*: background and border opacity
+- **Info**
+  - *Labels*: singer name chip (when the singer changes, while they sing, on hover, off; the artist
+    and featured artists when the lyrics do not name voices), cover and title until the first line
+    (on the lyrics' side when aligned left or right), lyrics source credit under the lyrics
 
 Lyrics synced per line only (no word timings from the provider) get word timings estimated from
 word length, so they still fill word by word.

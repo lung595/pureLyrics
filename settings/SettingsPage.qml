@@ -3,7 +3,7 @@ import qs.Common
 import qs.Widgets
 
 // One category of the settings. Shown while its tab is open, or during a search when one of its
-// settings matches; then only the matching settings show (label, description or category name).
+// settings matches; then only the matching settings show (label, description, group or category name).
 Item {
     id: page
 
@@ -15,17 +15,33 @@ Item {
 
     property int matches: 0
 
+    // Rows may declare `property bool shown`: without a query visibility follows it live, so a
+    // parent switch hides its dependents. With a query only matches show and `shown` is ignored.
     function filter() {
-        const words = view.query.toLowerCase().split(/\s+/).filter(w => w);
+        const query = view.query.trim().toLowerCase();
+        const words = query.split(/\s+/).filter(w => w);
         let count = 0;
-        for (const child of column.children) {
-            if (child.settingKey === undefined)
+        for (const section of column.children) {
+            if (section.body === undefined)
                 continue;
-            const text = [title, child.label, child.description].join(" ").toLowerCase();
-            const hit = words.every(w => text.includes(w));
-            child.visible = hit;
-            if (hit)
-                count++;
+            let hits = 0;
+            for (const child of section.body.children) {
+                if (child.settingKey === undefined)
+                    continue;
+                const text = [title, section.title, child.label, child.description].join(" ").toLowerCase();
+                const hit = words.every(w => text.includes(w));
+                if (query)
+                    child.visible = hit;
+                else
+                    child.visible = Qt.binding(() => child.shown ?? true);
+                if (hit)
+                    hits++;
+            }
+            if (query)
+                section.visible = hits > 0;
+            else
+                section.visible = Qt.binding(() => section.shown);
+            count += hits;
         }
         matches = count;
     }
@@ -56,7 +72,7 @@ Item {
     Column {
         id: column
         width: parent.width
-        spacing: Theme.spacingM
+        spacing: Theme.spacingL
 
         Row {
             spacing: Theme.spacingS

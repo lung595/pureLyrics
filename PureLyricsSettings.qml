@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
+import qs.DCommon.Widgets
 import "settings"
 
 // Search field on top, categories on the left, one category at a time on the right.
@@ -17,6 +18,14 @@ PluginSettings {
                 child.loadValue();
             else
                 reloadNested(child);
+        }
+    }
+    function resetNested(item) {
+        for (const child of item.children) {
+            if (child.settingKey !== undefined && child.defaultValue !== undefined)
+                root.saveValue(child.settingKey, child.defaultValue);
+            else
+                resetNested(child);
         }
     }
     onPluginServiceChanged: if (pluginService) Qt.callLater(reloadNested, scope)
@@ -109,7 +118,7 @@ PluginSettings {
                     spacing: Theme.spacingXS
 
                     Repeater {
-                        model: [pageText, pageEffects, pagePlayer, pageCard]
+                        model: [pageText, pagePlayer, pageStyle, pageInfo]
 
                         Rectangle {
                             id: tab
@@ -171,11 +180,11 @@ PluginSettings {
 
                     StyledText {
                         width: parent.width
-                        visible: !!view.query.trim() && pageText.matches + pageEffects.matches + pagePlayer.matches + pageCard.matches === 0
+                        visible: !!view.query.trim() && pageText.matches + pagePlayer.matches + pageStyle.matches + pageInfo.matches === 0
                         topPadding: Theme.spacingXL
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
-                        text: I18n.tr("Nothing matches. Try: font, bold, glow, player, seek, background")
+                        text: I18n.tr("Nothing matches. Try: font, bold, glow, player, seek, background, credit")
                         color: Theme.surfaceVariantText
                     }
 
@@ -186,175 +195,126 @@ PluginSettings {
                         title: I18n.tr("Text")
                         icon: "text_fields"
 
-                        SelectionSetting {
-                            settingKey: "fontFamily"
-                            label: I18n.tr("Font")
-                            description: I18n.tr("Font of the lyrics. Sources and player follow DMS Settings → Media.")
-                            defaultValue: "dms"
-                            // Not "": the dropdown saves the label when a value is falsy.
-                            options: [{ label: I18n.tr("DMS font"), value: "dms" }].concat(Qt.fontFamilies())
+                        SettingsSection {
+                            title: I18n.tr("Font")
+
+                            SelectionSetting {
+                                settingKey: "fontFamily"
+                                label: I18n.tr("Font")
+                                description: I18n.tr("Typeface of the lyrics.")
+                                defaultValue: "dms"
+                                // Not "": the dropdown saves the label when a value is falsy.
+                                options: [{ label: I18n.tr("DMS font"), value: "dms" }].concat(Qt.fontFamilies())
+                            }
+
+                            SliderSetting {
+                                settingKey: "textScale"
+                                label: I18n.tr("Sung line size")
+                                description: I18n.tr("Size of the line being sung. 100% matches the DMS dash.")
+                                defaultValue: 140
+                                minimum: 60
+                                maximum: 250
+                                unit: "%"
+                            }
+
+                            SliderSetting {
+                                settingKey: "activeWeight"
+                                label: I18n.tr("Sung line weight")
+                                description: I18n.tr("Boldness of the line being sung: 400 regular, 700 bold, 900 black.")
+                                defaultValue: 800
+                                minimum: 300
+                                maximum: 900
+                            }
                         }
 
-                        SliderSetting {
-                            settingKey: "textScale"
-                            label: I18n.tr("Middle line size")
-                            description: I18n.tr("Size of the line being sung (100 = DMS dash size)")
-                            defaultValue: 140
-                            minimum: 60
-                            maximum: 250
-                            unit: "%"
+                        SettingsSection {
+                            title: I18n.tr("Layout")
+
+                            SelectionSetting {
+                                id: alignSel
+                                settingKey: "textAlign"
+                                label: I18n.tr("Alignment")
+                                description: I18n.tr("Auto centres the lyrics and puts each duet singer on their side. Follow widget aligns to the widget's side of the screen.")
+                                defaultValue: "auto"
+                                options: [
+                                    { label: I18n.tr("Auto"), value: "auto" },
+                                    { label: I18n.tr("Left"), value: "left" },
+                                    { label: I18n.tr("Centre"), value: "center" },
+                                    { label: I18n.tr("Right"), value: "right" },
+                                    { label: I18n.tr("Follow widget"), value: "follow" }
+                                ]
+                            }
+
+                            ToggleSetting {
+                                // Auto already puts duet singers on their side.
+                                property bool shown: alignSel.value !== "auto"
+                                settingKey: "duetSides"
+                                label: I18n.tr("Duet sides")
+                                description: I18n.tr("In duets, the first singer goes left and the second right, whatever the alignment.")
+                                defaultValue: true
+                            }
+
+                            ToggleSetting {
+                                id: oneLineSw
+                                settingKey: "oneLine"
+                                label: I18n.tr("One line")
+                                description: I18n.tr("Only the sung line. The next one slides in as it fades.")
+                                defaultValue: false
+                            }
                         }
 
-                        SliderSetting {
-                            settingKey: "restScale"
-                            label: I18n.tr("Other lines size")
-                            description: I18n.tr("Size of the past and next lines, relative to the middle line")
-                            defaultValue: 80
-                            minimum: 30
-                            maximum: 100
-                            unit: "%"
-                        }
+                        SettingsSection {
+                            title: I18n.tr("Other lines")
+                            shown: !oneLineSw.value
 
-                        SliderSetting {
-                            settingKey: "pyramid"
-                            label: I18n.tr("Pyramid")
-                            description: I18n.tr("Each line further from the sung one gets this much smaller (0 = all other lines the same size)")
-                            defaultValue: 15
-                            minimum: 0
-                            maximum: 40
-                            unit: "%"
-                        }
+                            SliderSetting {
+                                settingKey: "restScale"
+                                label: I18n.tr("Size")
+                                description: I18n.tr("Size of the lines around the sung one, relative to it.")
+                                defaultValue: 80
+                                minimum: 30
+                                maximum: 100
+                                unit: "%"
+                            }
 
-                        SliderSetting {
-                            settingKey: "distanceFade"
-                            label: I18n.tr("Distance fade")
-                            description: I18n.tr("Each line further from the sung one gets this much fainter (0 = all other lines equally visible)")
-                            defaultValue: 0
-                            minimum: 0
-                            maximum: 80
-                            unit: "%"
-                        }
+                            SliderSetting {
+                                settingKey: "restWeight"
+                                label: I18n.tr("Weight")
+                                description: I18n.tr("Boldness of the lines around the sung one. Never bolder than the sung line.")
+                                defaultValue: 500
+                                minimum: 300
+                                maximum: 900
+                            }
 
-                        SliderSetting {
-                            settingKey: "lineSpacing"
-                            label: I18n.tr("Line spacing")
-                            description: I18n.tr("Space between the middle line and the others (negative pulls them closer)")
-                            defaultValue: 0
-                            minimum: -40
-                            maximum: 80
-                            unit: "px"
-                        }
+                            SliderSetting {
+                                settingKey: "pyramid"
+                                label: I18n.tr("Shrink with distance")
+                                description: I18n.tr("Pyramid: each line further out is this much smaller. 0% keeps them one size.")
+                                defaultValue: 15
+                                minimum: 0
+                                maximum: 40
+                                unit: "%"
+                            }
 
-                        SliderSetting {
-                            settingKey: "activeWeight"
-                            label: I18n.tr("Active line weight")
-                            description: I18n.tr("Boldness of the line being sung (400 regular, 700 bold, 900 black)")
-                            defaultValue: 800
-                            minimum: 300
-                            maximum: 900
-                        }
+                            SliderSetting {
+                                settingKey: "distanceFade"
+                                label: I18n.tr("Fade with distance")
+                                description: I18n.tr("Each line further out is this much fainter. 0% keeps them equally visible.")
+                                defaultValue: 0
+                                minimum: 0
+                                maximum: 80
+                                unit: "%"
+                            }
 
-                        SliderSetting {
-                            settingKey: "restWeight"
-                            label: I18n.tr("Other lines weight")
-                            description: I18n.tr("Boldness of the lines around it. Capped at the active line weight.")
-                            defaultValue: 500
-                            minimum: 300
-                            maximum: 900
-                        }
-
-                        SelectionSetting {
-                            settingKey: "textAlign"
-                            label: I18n.tr("Alignment")
-                            description: I18n.tr("Auto: centred, each singer on their side in duets. Follow widget: left or right by where the widget sits on the screen.")
-                            defaultValue: "auto"
-                            options: [
-                                { label: I18n.tr("Auto"), value: "auto" },
-                                { label: I18n.tr("Left"), value: "left" },
-                                { label: I18n.tr("Centre"), value: "center" },
-                                { label: I18n.tr("Right"), value: "right" },
-                                { label: I18n.tr("Follow widget"), value: "follow" }
-                            ]
-                        }
-
-                        ToggleSetting {
-                            settingKey: "duetSides"
-                            label: I18n.tr("Singers on their side")
-                            description: I18n.tr("In duets the first singer goes left and the second right, whatever the alignment")
-                            defaultValue: true
-                        }
-
-                        SelectionSetting {
-                            settingKey: "singerName"
-                            label: I18n.tr("Singer name")
-                            description: I18n.tr("Name chip over the sung line, in the singer's colour. Lyrics that do not name voices (only local .ttml does) show the artist and featured artists.")
-                            defaultValue: "change"
-                            options: [
-                                { label: I18n.tr("When the singer changes"), value: "change" },
-                                { label: I18n.tr("While they sing"), value: "singing" },
-                                { label: I18n.tr("On hover"), value: "hover" },
-                                { label: I18n.tr("Off"), value: "off" }
-                            ]
-                        }
-
-                        ToggleSetting {
-                            settingKey: "oneLine"
-                            label: I18n.tr("One line")
-                            description: I18n.tr("Show only the sung line; the next one slides in as it fades")
-                            defaultValue: false
-                        }
-                    }
-
-                    SettingsPage {
-                        id: pageEffects
-                        view: view
-                        category: "effects"
-                        title: I18n.tr("Effects")
-                        icon: "auto_awesome"
-
-                        ToggleSetting {
-                            settingKey: "showHeader"
-                            label: I18n.tr("Cover and title")
-                            description: I18n.tr("Show cover, title and artist until the first line is sung")
-                            defaultValue: true
-                        }
-
-                        SliderSetting {
-                            settingKey: "depthBlur"
-                            label: I18n.tr("Depth blur")
-                            description: I18n.tr("Lines away from the sung one go out of focus, like a camera (0 = off). Redrawn only while lines move.")
-                            defaultValue: 40
-                            minimum: 0
-                            maximum: 100
-                            unit: "%"
-                        }
-
-                        ToggleSetting {
-                            settingKey: "floatWords"
-                            label: I18n.tr("Floating words")
-                            description: I18n.tr("Each word rises as one piece while it is sung and glows, then the line settles. Animates while a word is sung.")
-                            defaultValue: true
-                        }
-
-                        ToggleSetting {
-                            settingKey: "shadow"
-                            label: I18n.tr("Text shadow")
-                            description: I18n.tr("Soft shadow for light wallpapers. Low cost: redrawn only when a line changes.")
-                            defaultValue: true
-                        }
-
-                        ToggleSetting {
-                            settingKey: "glow"
-                            label: I18n.tr("Active line glow")
-                            description: I18n.tr("Breathing halo behind the sung line. Animates every frame while playing.")
-                            defaultValue: false
-                        }
-
-                        ToggleSetting {
-                            settingKey: "smoothSweep"
-                            label: I18n.tr("Smooth sweep")
-                            description: I18n.tr("Glide the fill through each word. Redraws every frame while a line is sung, so it uses more CPU. Off: the fill steps word by word.")
-                            defaultValue: false
+                            SliderSetting {
+                                settingKey: "lineSpacing"
+                                label: I18n.tr("Spacing")
+                                description: I18n.tr("Gap between the sung line and the others. Negative pulls them closer.")
+                                defaultValue: 0
+                                minimum: -40
+                                maximum: 80
+                                unit: "px"
+                            }
                         }
                     }
 
@@ -365,90 +325,225 @@ PluginSettings {
                         title: I18n.tr("Player")
                         icon: "play_circle"
 
-                        ToggleSetting {
-                            settingKey: "showPlayer"
-                            label: I18n.tr("Player buttons")
-                            description: I18n.tr("Previous, play/pause and next, in the DMS theme colours")
-                            defaultValue: true
+                        SettingsSection {
+                            title: I18n.tr("Buttons")
+
+                            ToggleSetting {
+                                id: playerSw
+                                settingKey: "showPlayer"
+                                label: I18n.tr("Player buttons")
+                                description: I18n.tr("Previous, play/pause and next, in the DMS theme colours.")
+                                defaultValue: true
+                            }
+
+                            ToggleSetting {
+                                id: hoverSw
+                                property bool shown: playerSw.value
+                                settingKey: "playerOnHover"
+                                label: I18n.tr("Show on hover")
+                                description: I18n.tr("Buttons appear under the pointer and fade 1 s after it leaves. Off: always shown.")
+                                defaultValue: true
+                            }
+
+                            SelectionSetting {
+                                id: positionSel
+                                property bool shown: playerSw.value
+                                settingKey: "playerPosition"
+                                label: I18n.tr("Position")
+                                description: I18n.tr("A row under the sung line, or a column beside it. Follow text puts the row on the lyrics' side. A widget too short for a column gets a row.")
+                                defaultValue: "center"
+                                options: [
+                                    { label: I18n.tr("Row, centre"), value: "center" },
+                                    { label: I18n.tr("Row, left"), value: "left" },
+                                    { label: I18n.tr("Row, right"), value: "right" },
+                                    { label: I18n.tr("Row, follow text"), value: "follow" },
+                                    { label: I18n.tr("Column, left"), value: "columnLeft" },
+                                    { label: I18n.tr("Column, right"), value: "columnRight" }
+                                ]
+                            }
+
+                            SliderSetting {
+                                // The gap only applies to a column shown always (playerRoom in PureLyrics.qml).
+                                property bool shown: playerSw.value && positionSel.value.startsWith("column") && !hoverSw.value
+                                settingKey: "playerGap"
+                                label: I18n.tr("Column gap")
+                                description: I18n.tr("Space between an always-shown column and the sung line. Lines further out step back toward the edge.")
+                                defaultValue: 32
+                                minimum: 0
+                                maximum: 120
+                                unit: "px"
+                            }
+
+                            SliderSetting {
+                                property bool shown: playerSw.value
+                                settingKey: "playerOpacity"
+                                label: I18n.tr("Opacity")
+                                description: I18n.tr("Below 100%, the buttons blur what is behind them when DMS blur is on.")
+                                defaultValue: 100
+                                minimum: 10
+                                maximum: 100
+                                unit: "%"
+                            }
                         }
 
-                        SelectionSetting {
-                            settingKey: "playerPosition"
-                            label: I18n.tr("Player position")
-                            description: I18n.tr("A row under the sung line, or a column beside it. Follow text: the row takes the lyrics' side. A column shown always pushes the lyrics aside; a widget too short for it gets a row.")
-                            defaultValue: "center"
-                            options: [
-                                { label: I18n.tr("Row, centre"), value: "center" },
-                                { label: I18n.tr("Row, left"), value: "left" },
-                                { label: I18n.tr("Row, right"), value: "right" },
-                                { label: I18n.tr("Row, follow text"), value: "follow" },
-                                { label: I18n.tr("Column, left"), value: "columnLeft" },
-                                { label: I18n.tr("Column, right"), value: "columnRight" }
-                            ]
-                        }
+                        SettingsSection {
+                            title: I18n.tr("Seek")
 
-                        ToggleSetting {
-                            settingKey: "playerOnHover"
-                            label: I18n.tr("Show on hover")
-                            description: I18n.tr("Buttons appear when the pointer is over the widget and fade 1 s after it leaves")
-                            defaultValue: true
-                        }
-
-                        SliderSetting {
-                            settingKey: "playerOpacity"
-                            label: I18n.tr("Player opacity")
-                            description: I18n.tr("Opacity of the player buttons. Below 100%, they blur what is behind them when DMS blur is on.")
-                            defaultValue: 100
-                            minimum: 10
-                            maximum: 100
-                            unit: "%"
-                        }
-
-                        SliderSetting {
-                            settingKey: "playerGap"
-                            label: I18n.tr("Gap beside a column")
-                            description: I18n.tr("Space between a player column and the sung line. Lines further away step back toward the edge.")
-                            defaultValue: 32
-                            minimum: 0
-                            maximum: 120
-                            unit: "px"
-                        }
-
-                        ToggleSetting {
-                            settingKey: "clickToSeek"
-                            label: I18n.tr("Click a line to seek")
-                            description: I18n.tr("Clicking a lyrics line jumps the song to that line")
-                            defaultValue: true
+                            ToggleSetting {
+                                settingKey: "clickToSeek"
+                                label: I18n.tr("Click to seek")
+                                description: I18n.tr("Click a lyrics line to jump the song to it.")
+                                defaultValue: true
+                            }
                         }
                     }
 
                     SettingsPage {
-                        id: pageCard
+                        id: pageStyle
                         view: view
-                        category: "card"
-                        title: I18n.tr("Background")
-                        icon: "rounded_corner"
+                        category: "style"
+                        title: I18n.tr("Style")
+                        icon: "palette"
 
-                        SliderSetting {
-                            settingKey: "backgroundOpacity"
-                            label: I18n.tr("Background opacity")
-                            description: I18n.tr("Rounded background card behind the lyrics (0 = none)")
-                            defaultValue: 0
-                            minimum: 0
-                            maximum: 100
-                            unit: "%"
+                        SettingsSection {
+                            title: I18n.tr("Motion")
+
+                            ToggleSetting {
+                                settingKey: "floatWords"
+                                label: I18n.tr("Floating words")
+                                description: I18n.tr("Each word rises and glows while it is sung, then the line settles.")
+                                defaultValue: true
+                            }
+
+                            ToggleSetting {
+                                settingKey: "smoothSweep"
+                                label: I18n.tr("Smooth sweep")
+                                description: I18n.tr("The fill glides through each word instead of stepping. Uses more CPU: redraws every frame while a line is sung.")
+                                defaultValue: false
+                            }
                         }
 
-                        SliderSetting {
-                            settingKey: "borderOpacity"
-                            label: I18n.tr("Border opacity")
-                            description: I18n.tr("Outline around the widget (0 = none)")
-                            defaultValue: 0
-                            minimum: 0
-                            maximum: 100
-                            unit: "%"
+                        SettingsSection {
+                            title: I18n.tr("Depth")
+
+                            SliderSetting {
+                                // It blurs only the other lines, which one-line mode hides.
+                                property bool shown: !oneLineSw.value
+                                settingKey: "depthBlur"
+                                label: I18n.tr("Depth blur")
+                                description: I18n.tr("Lines away from the sung one go out of focus, like a camera. 0% turns it off.")
+                                defaultValue: 40
+                                minimum: 0
+                                maximum: 100
+                                unit: "%"
+                            }
+
+                            ToggleSetting {
+                                settingKey: "shadow"
+                                label: I18n.tr("Text shadow")
+                                description: I18n.tr("Soft shadow that keeps lyrics readable on light wallpapers.")
+                                defaultValue: true
+                            }
+
+                            ToggleSetting {
+                                settingKey: "glow"
+                                label: I18n.tr("Glow")
+                                description: I18n.tr("Breathing halo behind the sung line. Animates every frame while playing.")
+                                defaultValue: false
+                            }
+                        }
+
+                        SettingsSection {
+                            title: I18n.tr("Card")
+
+                            SliderSetting {
+                                settingKey: "backgroundOpacity"
+                                label: I18n.tr("Background")
+                                description: I18n.tr("Rounded card behind the lyrics. 0% hides it.")
+                                defaultValue: 0
+                                minimum: 0
+                                maximum: 100
+                                unit: "%"
+                            }
+
+                            SliderSetting {
+                                settingKey: "borderOpacity"
+                                label: I18n.tr("Border")
+                                description: I18n.tr("Outline around the widget. 0% hides it.")
+                                defaultValue: 0
+                                minimum: 0
+                                maximum: 100
+                                unit: "%"
+                            }
                         }
                     }
+
+                    SettingsPage {
+                        id: pageInfo
+                        view: view
+                        category: "info"
+                        title: I18n.tr("Info")
+                        icon: "info"
+
+                        SettingsSection {
+                            title: I18n.tr("Labels")
+
+                            SelectionSetting {
+                                settingKey: "singerName"
+                                label: I18n.tr("Singer name")
+                                description: I18n.tr("Name chip over the sung line, in the singer's colour. Without named voices (only local .ttml has them) it shows the artist and featured artists.")
+                                defaultValue: "change"
+                                options: [
+                                    { label: I18n.tr("When the singer changes"), value: "change" },
+                                    { label: I18n.tr("While they sing"), value: "singing" },
+                                    { label: I18n.tr("On hover"), value: "hover" },
+                                    { label: I18n.tr("Off"), value: "off" }
+                                ]
+                            }
+
+                            ToggleSetting {
+                                settingKey: "showHeader"
+                                label: I18n.tr("Cover and title")
+                                description: I18n.tr("Cover, title and artist until the first line is sung.")
+                                defaultValue: true
+                            }
+
+                            ToggleSetting {
+                                settingKey: "showAttribution"
+                                label: I18n.tr("Lyrics source")
+                                description: I18n.tr("Shows the provider credit, e.g. Better Lyrics, under the lyrics. Providers are chosen in DMS Settings → Media.")
+                                defaultValue: true
+                            }
+                        }
+                    }
+                }
+            }
+
+            DButton {
+                id: reset
+                property bool armed: false
+                anchors.right: parent.right
+                visible: !view.query.trim()
+                variant: "text"
+                iconName: "restart_alt"
+                danger: armed
+                text: armed ? I18n.tr("Click again to reset all") : I18n.tr("Reset to defaults")
+                // No undo, so the first click only arms it for 4 s.
+                onClicked: {
+                    if (!armed) {
+                        armed = true;
+                        disarm.restart();
+                        return;
+                    }
+                    armed = false;
+                    disarm.stop();
+                    root.resetNested(scope);
+                    Qt.callLater(root.reloadNested, scope);
+                }
+                Timer {
+                    id: disarm
+                    interval: 4000
+                    onTriggered: reset.armed = false
                 }
             }
         }
