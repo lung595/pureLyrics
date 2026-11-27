@@ -190,8 +190,9 @@ PluginSettings {
                             settingKey: "fontFamily"
                             label: I18n.tr("Font")
                             description: I18n.tr("Font of the lyrics. Sources and player follow DMS Settings → Media.")
-                            defaultValue: ""
-                            options: [{ label: I18n.tr("DMS font"), value: "" }].concat(Qt.fontFamilies())
+                            defaultValue: "dms"
+                            // Not "": the dropdown saves the label when a value is falsy.
+                            options: [{ label: I18n.tr("DMS font"), value: "dms" }].concat(Qt.fontFamilies())
                         }
 
                         SliderSetting {
@@ -331,7 +332,7 @@ PluginSettings {
                         ToggleSetting {
                             settingKey: "floatWords"
                             label: I18n.tr("Floating words")
-                            description: I18n.tr("Each word rises as one piece while it is sung and glows, then the line settles")
+                            description: I18n.tr("Each word rises as one piece while it is sung and glows, then the line settles. Animates while a word is sung.")
                             defaultValue: true
                         }
 

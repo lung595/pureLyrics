@@ -50,8 +50,9 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 - Lyrics come from DMS's shared `LyricsService`. The dash and this widget use one controller,
   so a song is fetched once.
 - The controller wakes on word and line cues, not on a fixed poll.
-- With **Smooth sweep** off (default), nothing redraws between cues. Turn it on for the gliding
-  fill of the dash; it redraws every frame while a line is sung.
+- With **Smooth sweep** off (default), the fill only redraws on cues. Turn it on for the gliding
+  fill of the dash; it redraws every frame while a line is sung. **Floating words** (on by
+  default) also animate while a word is sung.
 - The widget hides when no player is playing, and then drops its lyrics subscription.
 
 ## Settings

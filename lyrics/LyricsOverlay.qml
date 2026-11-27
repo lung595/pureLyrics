@@ -206,13 +206,13 @@ FocusScope {
         const centre = Math.max(0, centreItem);
         const jump = Math.abs(centre - pushedItem) > 1;
         pushedItem = centre;
+        heightCache = {};
+        centreHeight = cachedHeight(centre);
         // A scroll on its way retargets to the active line on every step.
         if (scrollSpring.running)
             return;
         transcript.stopMomentum();
         transcript.forceLayout();
-        heightCache = {};
-        centreHeight = cachedHeight(centre);
         const target = Math.round(centreOffset(centre));
         const delta = target - transcript.contentY;
         if (delta === 0)
@@ -426,7 +426,10 @@ FocusScope {
             anchors.right: parent.right
             anchors.top: heading.visible ? heading.bottom : parent.top
             anchors.bottom: parent.bottom
-            anchors.margins: Theme.spacingM
+            anchors.topMargin: Theme.spacingM
+            anchors.bottomMargin: Theme.spacingM
+            // Clipped here rather than on the view, so hanging punctuation keeps the side margins.
+            clip: true
             visible: root.ready
             opacity: root.ready ? 1 : 0
 
@@ -443,10 +446,12 @@ FocusScope {
                 id: transcript
 
                 anchors.fill: parent
+                anchors.leftMargin: Theme.spacingM
+                anchors.rightMargin: Theme.spacingM
                 spacing: root.lineSpacing
                 fadeEdges: false
                 showScrollBar: false
-                clip: true
+                clip: false
                 reuseItems: true
                 cacheBuffer: Math.max(0, Math.round(height / 2))
                 model: root.items

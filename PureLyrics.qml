@@ -16,7 +16,11 @@ import "lyrics"
 DesktopPluginComponent {
     id: root
 
-    readonly property string fontFamily: pluginData.fontFamily ?? ""
+    // "dms" (and "DMS font", saved by older versions) means the DMS font.
+    readonly property string fontFamily: {
+        const f = pluginData.fontFamily ?? "";
+        return f === "dms" || f === "DMS font" ? "" : f;
+    }
     readonly property int activeWeight: pluginData.activeWeight ?? 800
     readonly property int restWeight: pluginData.restWeight ?? 500
     readonly property bool smoothSweep: pluginData.smoothSweep ?? false
@@ -157,7 +161,7 @@ DesktopPluginComponent {
         // Row: under the sung line (a fifth of the space below lower), over the next ones while shown.
         // Column: centred on the sung line. Both kept inside the widget.
         y: root.playerColumn
-            ? Math.max(minY, Math.min(overlay.focusCentre - height / 2, root.height - height - Theme.spacingS))
+            ? Math.min(root.height - height - Theme.spacingS, Math.max(minY, overlay.focusCentre - height / 2))
             : Math.max(0, Math.min(overlay.focusBottom + Theme.spacingM + Math.max(0, root.height - overlay.focusBottom - height) * 0.2, root.height - height - Theme.spacingS))
         Behavior on x {
             NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
