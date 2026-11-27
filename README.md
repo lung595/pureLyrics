@@ -7,7 +7,7 @@
 The DMS lyrics view as a desktop widget: word-by-word fill, one colour per singer, lines that
 shrink as they move away.
 
-[What it looks like](#what-it-looks-like) · [About](#about) · [Why it is light](#why-it-is-light) · [Settings](#settings) · [Requirements](#requirements)
+[What it looks like](#what-it-looks-like) · [Before and after](#before-and-after) · [About](#about) · [Why it is light](#why-it-is-light) · [Settings](#settings) · [Requirements](#requirements)
 
 </div>
 
@@ -20,6 +20,18 @@ shrink as they move away.
 | One colour per singer | Player buttons on hover |
 | --- | --- |
 | <img src="docs/media/singers.gif" alt="A duet: each singer's lines take their own theme colour and side, and a small chip names the singer when the voice changes" width="100%"> | <img src="docs/media/controls.gif" alt="Previous, pause and next buttons fade in under the sung line, then fade out" width="100%"> |
+
+| Alignment follows the widget's side | Same song, four looks |
+| --- | --- |
+| <img src="docs/media/align.gif" alt="The widget moves from the left of the screen to the centre then to the right, and the lyrics align left, centre, then right with it" width="100%"> | <img src="docs/media/variants.png" alt="Four views of the same line: the default look, centred with a background, one line only, and flat text with no glow, blur or pyramid" width="100%"> |
+
+*Top row: default, centred with background. Bottom row: one line, flat.*
+
+### Before and after
+
+<img src="docs/media/before-after.png" alt="Left: the upstream widget shows three small lines of plain text with the sung line in orange. Right: this fork shows the same line large and bold, filling word by word, with the lines around it smaller and dimmer" width="100%">
+
+*Left: upstream pureLyrics at its defaults. Right: this fork. Same song, same moment.*
 
 The demo song, its lyrics and its singers are made up for these captures.
 
@@ -45,6 +57,8 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 ## Settings
 
 DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top, four tabs:
+
+<img src="docs/media/settings.png" alt="The plugin's settings page twice: the Text tab with font and size sliders, and the Player tab with the buttons switch, the player position menu, show on hover and opacity" width="100%">
 
 - **Text**: font (any installed family, or the DMS font), alignment (auto, left, centre, right, or
   follow the widget's side of the screen), singers on their side in duets, singer name chip (the artist and featured artists when the lyrics do not name voices; when
