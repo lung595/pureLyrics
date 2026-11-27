@@ -73,6 +73,25 @@ Item {
     property real pyramid: 0
     property bool before: false
     readonly property real shrinkScale: restScale * Math.pow(1 - pyramid, Math.max(0, depth - 1))
+    // The whole line shrinks outside its cached layer, so a move only re-composites the texture
+    // instead of redrawing the text, shadow and blur on every frame.
+    readonly property int lineAlign: {
+        const lead = layouts.find(layout => !layout.part.background);
+        if (lead)
+            return alignFor(lead.part);
+        return textAlign === "left" ? Text.AlignLeft : textAlign === "right" ? Text.AlignRight : Text.AlignHCenter;
+    }
+    property real faceScale: shrunk ? shrinkScale : 1
+    Behavior on faceScale {
+        enabled: root.animationsEnabled
+        NumberAnimation {
+            duration: root.moveDuration
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: root.moveCurve
+        }
+    }
+    // Gentle start and a long soft landing (M3 emphasized), smoother than DMS's quick-start curve.
+    readonly property var moveCurve: [0.2, 0, 0, 1, 1, 1]
     function originFor(alignment) {
         if (alignment === Text.AlignLeft)
             return before ? Item.BottomLeft : Item.TopLeft;
@@ -205,7 +224,7 @@ Item {
             to: 0
             duration: root.moveDuration
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: DashMetrics.lyricsTrackCurve
+            easing.bezierCurve: root.moveCurve
         }
     }
 
@@ -214,11 +233,21 @@ Item {
 
         width: root.width
         height: root.height
-        transform: Translate {
-            y: root.shift
-        }
-        // Re-rendered only when this line's content changes, not while the view scrolls.
+        transform: [
+            Scale {
+                origin.x: root.lineAlign === Text.AlignLeft ? 0 : root.lineAlign === Text.AlignRight ? face.width : face.width / 2
+                origin.y: root.before ? face.height : 0
+                xScale: root.faceScale
+                yScale: root.faceScale
+            },
+            Translate {
+                y: root.shift
+            }
+        ]
+        // Re-rendered only when this line's content changes, not while the view scrolls or shrinks.
         layer.enabled: root.shadow || root.shownBlur > 0.01
+        layer.smooth: true
+        layer.mipmap: true
         layer.effect: MultiEffect {
             autoPaddingEnabled: true
             blurEnabled: root.shownBlur > 0.01
@@ -250,17 +279,6 @@ Item {
             width: root.breakSize
             height: root.breakSize
             active: root.isBreak
-            scale: root.shrunk ? root.shrinkScale : 1
-            transformOrigin: root.originFor(root.textAlign === "left" ? Text.AlignLeft : root.textAlign === "right" ? Text.AlignRight : Text.AlignHCenter)
-
-            Behavior on scale {
-                enabled: root.animationsEnabled
-                NumberAnimation {
-                    duration: root.moveDuration
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: DashMetrics.lyricsTrackCurve
-                }
-            }
 
             sourceComponent: DCircularWavyProgress {
                 progress: root.ringProgress
@@ -313,6 +331,22 @@ Item {
 
     // Singer name: a tonal chip over the sung line, on the singer's side and in their colour. Kept
     // outside the face, whose layer would clip anything above the line.
+    // Same scale and push as the face, so the chip sticks to its line frame by frame.
+    Item {
+        width: root.width
+        height: root.height
+        transform: [
+            Scale {
+                origin.x: root.lineAlign === Text.AlignLeft ? 0 : root.lineAlign === Text.AlignRight ? root.width : root.width / 2
+                origin.y: root.before ? root.height : 0
+                xScale: root.faceScale
+                yScale: root.faceScale
+            },
+            Translate {
+                y: root.shift
+            }
+        ]
+
     Repeater {
         model: root.singerName === "off" ? [] : root.layouts
 
@@ -335,7 +369,7 @@ Item {
             opacity: shown ? 1 : 0
             visible: opacity > 0
             transform: Translate {
-                y: root.shift + (chip.shown ? 0 : Theme.spacingXS)
+                y: chip.shown ? 0 : Theme.spacingXS
                 Behavior on y {
                     enabled: root.animationsEnabled
                     NumberAnimation {
@@ -399,6 +433,7 @@ Item {
             }
         }
     }
+    }
 
     component LyricsPart: Item {
         id: lyricsPart
@@ -421,20 +456,13 @@ Item {
         height: layout.rows.length * layout.rowHeight
         // A background part still being sung keeps its size while the rest of its line shrinks. A lead
         // part that is still finishing as the next line moves in shrinks with its line.
-        scale: root.shrunk && !(part.background && root.clock >= part.t && root.clock < part.e) ? root.shrinkScale : 1
+        // The line shrinks as a whole (faceScale); a background part still being sung undoes it.
+        scale: root.shrunk && part.background && root.clock >= part.t && root.clock < part.e ? 1 / root.faceScale : 1
         // Shrinks toward its aligned edge, so a left or right aligned column keeps one straight edge.
         transformOrigin: root.originFor(alignment)
         LayoutMirroring.enabled: false
         LayoutMirroring.childrenInherit: true
 
-        Behavior on scale {
-            enabled: root.animationsEnabled
-            NumberAnimation {
-                duration: root.moveDuration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: DashMetrics.lyricsTrackCurve
-            }
-        }
 
         Repeater {
             model: lyricsPart.layout.rows
