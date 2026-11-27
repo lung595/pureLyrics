@@ -505,6 +505,8 @@ Item {
                 // draws its slice of the row through its own shader, so the glyphs never bend.
                 readonly property bool floating: root.floatWords && root.animationsEnabled && lyricsPart.timed && !lyricsPart.part.background
                 property real floatAmount: floating && root.promoted ? 1 : 0
+                // A bool, so the slices are rebuilt only when it flips, not on every frame of the settle.
+                readonly property bool sliced: floating && (root.promoted || floatAmount > 0)
                 Behavior on floatAmount {
                     NumberAnimation {
                         duration: root.moveDuration
@@ -513,7 +515,7 @@ Item {
                 }
                 // Visual [a, b) slices covering the whole row, cut halfway between words, with timings.
                 readonly property var words: {
-                    const segments = floating && (root.promoted || floatAmount > 0) ? modelData.segments : [];
+                    const segments = sliced ? modelData.segments : [];
                     if (segments.length === 0 || width <= 0)
                         return [{ a: 0, b: width, t: Infinity, e: Infinity }];
                     const out = [];

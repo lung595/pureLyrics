@@ -290,7 +290,7 @@ DesktopPluginComponent {
         readonly property int textAlign: root.resolvedAlign === "right" ? Text.AlignRight : Text.AlignLeft
         width: Math.min(implicitWidth, parent.width - edge * 2)
         spacing: Theme.spacingM
-        opacity: root.showHeader && root.height >= 140 && overlay.controller.activeIndex < 0 && !!root.player ? 1 : 0
+        opacity: root.showHeader && root.height >= 140 && !overlay.unsynced && overlay.controller.activeIndex < 0 && !!root.player ? 1 : 0
         visible: opacity > 0
         layer.enabled: root.shadow
         layer.effect: MultiEffect {

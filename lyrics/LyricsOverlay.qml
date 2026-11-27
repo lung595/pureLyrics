@@ -522,10 +522,11 @@ FocusScope {
                         }
                     }
                     width: root.lineWidth
-                    hangPunctuation: indentTarget === 0
                     // Text aligned away from the column keeps its edge where the column is cleared.
+                    readonly property bool pinned: root.rightRoom > 0 && line.lineAlign === Text.AlignLeft || root.leftRoom > 0 && line.lineAlign === Text.AlignRight
+                    hangPunctuation: indentTarget === 0 || pinned
                     transform: Translate {
-                        x: root.rightRoom > 0 && line.lineAlign === Text.AlignLeft ? 0 : root.leftRoom > 0 && line.lineAlign === Text.AlignRight ? root.leftRoom : root.leftRoom * line.indent + root.rightRoom * (1 - line.indent)
+                        x: line.pinned ? root.leftRoom : root.leftRoom * line.indent + root.rightRoom * (1 - line.indent)
                     }
                     // One-line mode shows the sung line only; the next one slides in as the old one fades.
                     opacity: (root.oneLine && root.synced ? (line.lit ? 1 : 0) : root.synced && root.edgeFade > 0 ? Math.max(0, Math.min(1, edgeDistance / root.edgeFade)) : 1) * line.fadeOpacity
