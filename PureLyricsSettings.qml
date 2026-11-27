@@ -357,21 +357,36 @@ PluginSettings {
                         ToggleSetting {
                             settingKey: "showPlayer"
                             label: I18n.tr("Player buttons")
-                            description: I18n.tr("Previous, play/pause and next under the lyrics, in the DMS theme colours")
+                            description: I18n.tr("Previous, play/pause and next, in the DMS theme colours")
                             defaultValue: true
+                        }
+
+                        SelectionSetting {
+                            settingKey: "playerPosition"
+                            label: I18n.tr("Player position")
+                            description: I18n.tr("A row under the sung line, or a column beside it. Follow text: the row takes the lyrics' side. A column shown always pushes the lyrics aside; a widget too short for it gets a row.")
+                            defaultValue: "center"
+                            options: [
+                                { label: I18n.tr("Row, centre"), value: "center" },
+                                { label: I18n.tr("Row, left"), value: "left" },
+                                { label: I18n.tr("Row, right"), value: "right" },
+                                { label: I18n.tr("Row, follow text"), value: "follow" },
+                                { label: I18n.tr("Column, left"), value: "columnLeft" },
+                                { label: I18n.tr("Column, right"), value: "columnRight" }
+                            ]
                         }
 
                         ToggleSetting {
                             settingKey: "playerOnHover"
                             label: I18n.tr("Show on hover")
-                            description: I18n.tr("Buttons appear when the pointer is over the widget and fade 1 s after it leaves, right under the sung line")
+                            description: I18n.tr("Buttons appear when the pointer is over the widget and fade 1 s after it leaves")
                             defaultValue: true
                         }
 
                         SliderSetting {
                             settingKey: "playerOpacity"
                             label: I18n.tr("Player opacity")
-                            description: I18n.tr("Opacity of the player buttons")
+                            description: I18n.tr("Opacity of the player buttons. Below 100%, they blur what is behind them when DMS blur is on.")
                             defaultValue: 100
                             minimum: 10
                             maximum: 100

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Widgets
+import Quickshell.Wayland
 import Quickshell.Services.Mpris
 import qs.Common
 import qs.Services
@@ -29,6 +30,8 @@ DesktopPluginComponent {
     readonly property real playerOpacity: (pluginData.playerOpacity ?? 100) / 100
     readonly property bool clickToSeek: pluginData.clickToSeek ?? true
     readonly property bool playerOnHover: pluginData.playerOnHover ?? true
+    // center, left, right, follow (the text's side) in a row; columnLeft, columnRight stacked.
+    readonly property string playerPosition: pluginData.playerPosition ?? "center"
     readonly property real depthBlur: (pluginData.depthBlur ?? 40) / 100
     readonly property bool floatWords: pluginData.floatWords ?? true
     readonly property real textScale: (pluginData.textScale ?? 140) / 100
@@ -99,6 +102,8 @@ DesktopPluginComponent {
         depthBlur: root.depthBlur
         floatWords: root.floatWords
         textAlign: root.resolvedAlign
+        leftRoom: root.playerSide === "left" ? root.playerRoom : 0
+        rightRoom: root.playerSide === "right" ? root.playerRoom : 0
         duetSides: root.duetSides
         singerName: root.singerName
         pointerOver: hover.hovered
@@ -116,22 +121,54 @@ DesktopPluginComponent {
         interval: 1000
     }
     readonly property bool playerShown: !playerOnHover || hover.hovered || hideTimer.running
+    // A column needs the height of three buttons; a widget too short for it keeps a row on the same side.
+    readonly property bool playerColumn: (playerPosition === "columnLeft" || playerPosition === "columnRight")
+        && height >= prevButton.height * 3 + transport.spacing * 2 + Theme.spacingS * 2
+    readonly property string playerSide: {
+        switch (playerPosition) {
+        case "left":
+        case "columnLeft":
+            return "left";
+        case "right":
+        case "columnRight":
+            return "right";
+        case "follow":
+            return resolvedAlign === "left" || resolvedAlign === "right" ? resolvedAlign : "center";
+        }
+        return "center";
+    }
+    // An always shown column pushes the lyrics aside; on hover it floats over them so the text never jumps.
+    readonly property real playerRoom: playerColumn && transport.visible && !playerOnHover ? transport.width + Theme.spacingM : 0
 
-    // Previous, play/pause, next under the lyrics, M3 expressive buttons in the DMS theme colours.
-    Row {
+    // Previous, play/pause, next in a row under the sung line, or in a column beside it.
+    Grid {
         id: transport
-        // Under the sung line (a fifth of the space below lower), over the next ones while shown; kept inside the widget.
-        y: Math.max(0, Math.min(overlay.focusBottom + Theme.spacingM + Math.max(0, root.height - overlay.focusBottom - height) * 0.2, root.height - height - Theme.spacingS))
+        readonly property real edge: Math.max(Theme.spacingM, overlay.shapeInset)
+        readonly property real minY: header.visible ? header.y + header.height + Theme.spacingS : Theme.spacingS
+        columns: root.playerColumn ? 1 : 3
+        spacing: Theme.spacingS
+        x: root.playerSide === "left" ? edge : root.playerSide === "right" ? root.width - width - edge : (root.width - width) / 2
+        // Row: under the sung line (a fifth of the space below lower), over the next ones while shown.
+        // Column: centred on the sung line. Both kept inside the widget.
+        y: root.playerColumn
+            ? Math.max(minY, Math.min(overlay.focusCentre - height / 2, root.height - height - Theme.spacingS))
+            : Math.max(0, Math.min(overlay.focusBottom + Theme.spacingM + Math.max(0, root.height - overlay.focusBottom - height) * 0.2, root.height - height - Theme.spacingS))
+        Behavior on x {
+            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+        }
         Behavior on y {
             NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
         }
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Theme.spacingS
         visible: root.showPlayer && root.playerOpacity > 0 && root.height >= 120
         opacity: root.playerShown ? root.playerOpacity : 0
         enabled: opacity > 0.05
+        // Slides in from the widget's edge in a column, from below in a row.
         transform: Translate {
-            y: root.playerShown ? 0 : Theme.spacingS
+            x: root.playerShown || !root.playerColumn ? 0 : root.playerSide === "left" ? -Theme.spacingS : Theme.spacingS
+            y: root.playerShown || root.playerColumn ? 0 : Theme.spacingS
+            Behavior on x {
+                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+            }
             Behavior on y {
                 NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
             }
@@ -144,6 +181,7 @@ DesktopPluginComponent {
             size: "s"
             widthMode: "wide"
             variant: "tonal"
+            id: prevButton
             iconName: "skip_previous"
             iconFilled: false
             enabled: !!root.player?.canGoPrevious || !!root.player?.canSeek
@@ -152,6 +190,7 @@ DesktopPluginComponent {
         }
 
         DIconButton {
+            id: playButton
             readonly property bool playing: root.player?.playbackState === MprisPlaybackState.Playing
             size: "s"
             widthMode: "wide"
@@ -169,12 +208,55 @@ DesktopPluginComponent {
             size: "s"
             widthMode: "wide"
             variant: "tonal"
+            id: nextButton
             iconName: "skip_next"
             iconFilled: false
             enabled: !!root.player?.canGoNext
             Accessible.name: I18n.tr("Next")
             onClicked: MprisController.next()
         }
+    }
+
+    // See-through buttons blur what is behind them, with DMS's window blur. The region follows the
+    // buttons once they settle; it is set while they show and dropped as soon as they start to hide.
+    readonly property bool playerBlur: BlurService.enabled && transport.visible && playerShown && playerOpacity < 1
+    Region {
+        id: playerBlurRegion
+        item: prevButton
+        radius: prevButton.radius
+        Region {
+            item: playButton
+            radius: playButton.radius
+        }
+        Region {
+            item: nextButton
+            radius: nextButton.radius
+        }
+    }
+    function applyPlayerBlur() {
+        const window = QsWindow.window;
+        if (!window?.BackgroundEffect)
+            return;
+        window.BackgroundEffect.blurRegion = null;
+        window.BackgroundEffect.blurRegion = playerBlur ? playerBlurRegion : null;
+    }
+    onPlayerBlurChanged: applyPlayerBlur()
+    Timer {
+        id: blurSettle
+        interval: 320
+        onTriggered: root.applyPlayerBlur()
+    }
+    Connections {
+        target: transport
+        function onXChanged() { if (root.playerBlur) blurSettle.restart(); }
+        function onYChanged() { if (root.playerBlur) blurSettle.restart(); }
+        function onColumnsChanged() { if (root.playerBlur) blurSettle.restart(); }
+    }
+    Component.onCompleted: applyPlayerBlur()
+    Component.onDestruction: {
+        const window = QsWindow.window;
+        if (window?.BackgroundEffect)
+            window.BackgroundEffect.blurRegion = null;
     }
 
     Rectangle {

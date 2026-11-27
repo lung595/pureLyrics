@@ -60,6 +60,10 @@ FocusScope {
     // Bottom of the centred line, in this item's coordinates; the widget puts its player there.
     property real centreHeight: 0
     readonly property real focusBottom: transcript.y + transcript.height / 2 + centreHeight / 2
+    readonly property real focusCentre: focusBottom - centreHeight / 2
+    // Extra room kept free on each side, for a player column that is always shown.
+    property real leftRoom: 0
+    property real rightRoom: 0
     property real depthBlur: 0
     property bool floatWords: false
     property real restScale: DashMetrics.lyricsLineInactiveScale
@@ -415,6 +419,8 @@ FocusScope {
             anchors.top: heading.visible ? heading.bottom : parent.top
             anchors.bottom: parent.bottom
             anchors.margins: Theme.spacingM
+            anchors.leftMargin: Theme.spacingM + root.leftRoom
+            anchors.rightMargin: Theme.spacingM + root.rightRoom
             visible: root.ready
             opacity: root.ready ? 1 : 0
 

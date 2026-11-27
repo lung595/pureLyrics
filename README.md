@@ -1,4 +1,29 @@
-# Pure Lyrics
+<div align="center">
+
+<img src="docs/media/hero.png" alt="The title Pure Lyrics over a desktop wallpaper of a beach seen from a cave. At the top left, the sung line Every wave a line I never sang fills word by word in orange, with the line before and the next lines smaller and dimmer around it" width="100%">
+
+**Synced lyrics on your [DMS](https://github.com/duxlabs-dev/dux-shell) desktop.**
+
+The DMS lyrics view as a desktop widget: word-by-word fill, one colour per singer, lines that
+shrink as they move away.
+
+[What it looks like](#what-it-looks-like) · [About](#about) · [Why it is light](#why-it-is-light) · [Settings](#settings) · [Requirements](#requirements)
+
+</div>
+
+## What it looks like
+
+<img src="docs/media/scroll.gif" alt="Lyrics scroll up: the sung line grows into the middle and fills word by word, the lines before and after shrink and fade with distance" width="100%">
+
+*The sung line fills word by word. Lines further from it get smaller.*
+
+| One colour per singer | Player buttons on hover |
+| --- | --- |
+| <img src="docs/media/singers.gif" alt="A duet: each singer's lines take their own theme colour and side, and a small chip names the singer when the voice changes" width="100%"> | <img src="docs/media/controls.gif" alt="Previous, pause and next buttons fade in under the sung line, then fade out" width="100%"> |
+
+The demo song, its lyrics and its singers are made up for these captures.
+
+## About
 
 A floating desktop widget that shows DMS's own synced lyrics view: word-by-word fill, spring
 scrolling, lines that grow into the centre, fill in the DMS theme colour.
@@ -30,8 +55,10 @@ DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top
   aligned left or right), depth blur on the lines around the
   sung one, floating sung word, text shadow (on by default),
   active line glow (animates every frame), smooth sweep
-- **Player**: previous / play-pause / next buttons under the lyrics, shown on hover or always, their opacity, click a line
-  to seek
+- **Player**: previous / play-pause / next buttons, in a row under the sung line (centre, left,
+  right, or the lyrics' side) or in a column beside it (left or right, centred on the sung line;
+  shown always, it pushes the lyrics aside). Shown on hover or always, their opacity (below 100%
+  they blur what is behind them when DMS blur is on), click a line to seek
 - **Background**: background and border opacity
 
 Lyrics synced per line only (no word timings from the provider) get word timings estimated from
