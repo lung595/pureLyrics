@@ -61,7 +61,7 @@ DMS Settings → Desktop Widgets → Pure Lyrics. Search with Ctrl+F (Esc clears
 nothing in the current setup stay hidden: player options while the buttons are off, the other
 lines' options in one-line mode. **Reset to defaults** sits at the bottom (click twice).
 
-<img src="docs/media/settings.png" alt="The plugin's settings page twice: the Text tab with font and size sliders, and the Player tab with the buttons switch, the player position menu, show on hover and opacity" width="100%">
+<img src="docs/media/settings.png" alt="The plugin's settings page twice: the Text tab with the Font, Layout and Other lines groups, and the Player tab with the Buttons and Seek groups" width="100%">
 
 - **Text**
   - *Font*: font (any installed family, or the DMS font), sung line size, sung line weight
