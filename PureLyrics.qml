@@ -122,6 +122,7 @@ DesktopPluginComponent {
     }
     readonly property bool playerShown: !playerOnHover || hover.hovered || hideTimer.running
     // A column needs the height of three buttons; a widget too short for it keeps a row on the same side.
+    // Its buttons are narrow so the column stays thin beside the lyrics.
     readonly property bool playerColumn: (playerPosition === "columnLeft" || playerPosition === "columnRight")
         && height >= prevButton.height * 3 + transport.spacing * 2 + Theme.spacingS * 2
     readonly property string playerSide: {
@@ -179,7 +180,7 @@ DesktopPluginComponent {
 
         DIconButton {
             size: "s"
-            widthMode: "wide"
+            widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "tonal"
             id: prevButton
             iconName: "skip_previous"
@@ -193,7 +194,7 @@ DesktopPluginComponent {
             id: playButton
             readonly property bool playing: root.player?.playbackState === MprisPlaybackState.Playing
             size: "s"
-            widthMode: "wide"
+            widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "filled"
             round: false
             checkable: true
@@ -206,7 +207,7 @@ DesktopPluginComponent {
 
         DIconButton {
             size: "s"
-            widthMode: "wide"
+            widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "tonal"
             id: nextButton
             iconName: "skip_next"
