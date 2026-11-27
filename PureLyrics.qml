@@ -189,10 +189,14 @@ DesktopPluginComponent {
     // Cover, title and artist until the first line is sung, then it fades away.
     Row {
         id: header
+        // Same edge as the lyrics: the overlay's content inset plus its viewport margin.
+        readonly property real edge: Math.max(Theme.spacingM, overlay.shapeInset)
         anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
         anchors.topMargin: Theme.spacingM
-        width: Math.min(implicitWidth, parent.width - Theme.spacingM * 2)
+        x: root.resolvedAlign === "left" ? edge : root.resolvedAlign === "right" ? parent.width - width - edge : (parent.width - width) / 2
+        layoutDirection: root.resolvedAlign === "right" ? Qt.RightToLeft : Qt.LeftToRight
+        readonly property int textAlign: root.resolvedAlign === "right" ? Text.AlignRight : Text.AlignLeft
+        width: Math.min(implicitWidth, parent.width - edge * 2)
         spacing: Theme.spacingM
         opacity: root.showHeader && root.height >= 140 && overlay.controller.activeIndex < 0 && !!root.player ? 1 : 0
         visible: opacity > 0
@@ -232,6 +236,7 @@ DesktopPluginComponent {
             StyledText {
                 width: parent.width
                 text: root.player?.trackTitle ?? ""
+                horizontalAlignment: header.textAlign
                 font.family: root.fontFamily || Theme.fontFamily
                 font.pixelSize: Theme.fontSizeLarge
                 font.weight: Theme.fontWeightBold
@@ -242,6 +247,7 @@ DesktopPluginComponent {
             StyledText {
                 width: parent.width
                 text: root.player?.trackArtist ?? ""
+                horizontalAlignment: header.textAlign
                 font.family: root.fontFamily || Theme.fontFamily
                 font.pixelSize: Theme.fontSizeMedium
                 color: Theme.surfaceVariantText

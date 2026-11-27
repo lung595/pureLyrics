@@ -26,7 +26,8 @@ DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top
   the singer changes, while they sing, on hover, off), middle line size, other lines size, pyramid
   (each line further out is smaller), line spacing, active line weight, other lines weight,
   one line mode
-- **Effects**: cover and title header until the first line, depth blur on the lines around the
+- **Effects**: cover and title header until the first line (on the lyrics' side when they are
+  aligned left or right), depth blur on the lines around the
   sung one, floating sung word, text shadow (on by default),
   active line glow (animates every frame), smooth sweep
 - **Player**: previous / play-pause / next buttons under the lyrics, shown on hover or always, their opacity, click a line
