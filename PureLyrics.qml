@@ -156,7 +156,7 @@ DesktopPluginComponent {
     Grid {
         id: transport
         readonly property real edge: Math.max(Theme.spacingM, overlay.shapeInset)
-        readonly property real minY: header.visible ? header.y + header.height + Theme.spacingS : Theme.spacingS
+        readonly property real minY: (header.visible ? header.y + header.height + Theme.spacingS : Theme.spacingS) + (columnCover.visible ? columnCover.height + spacing : 0)
         columns: root.playerColumn ? 1 : 3
         spacing: Theme.spacingS
         x: root.playerSide === "left" ? edge : root.playerSide === "right" ? root.width - width - edge : (root.width - width) / 2
@@ -311,7 +311,7 @@ DesktopPluginComponent {
             height: 48
             radius: Theme.cornerRadius
             color: Theme.surfaceContainerHighest
-            visible: art.status === Image.Ready
+            visible: art.status === Image.Ready && !columnCover.shown
 
             Image {
                 id: art
@@ -349,6 +349,28 @@ DesktopPluginComponent {
                 color: Theme.surfaceVariantText
                 elide: Text.ElideRight
             }
+        }
+    }
+
+    // In a column the header's cover sits on top of the buttons instead, spaced like them.
+    ClippingRectangle {
+        id: columnCover
+        readonly property bool shown: root.playerColumn && transport.visible && art.status === Image.Ready
+        x: transport.x + (transport.width - width) / 2
+        y: transport.y - height - transport.spacing
+        width: 48
+        height: 48
+        radius: Theme.cornerRadius
+        color: Theme.surfaceContainerHighest
+        opacity: header.opacity
+        visible: shown && header.visible
+
+        Image {
+            anchors.fill: parent
+            source: art.source
+            sourceSize: art.sourceSize
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
         }
     }
 }
