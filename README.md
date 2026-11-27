@@ -19,16 +19,20 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 
 ## Settings
 
-DMS Settings → Desktop Widgets → Pure Lyrics:
+DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top, four tabs:
 
-- Font (any installed family, or the DMS font)
-- Active line weight and other lines weight
-- One line mode
-- Cover and title header until the first line
-- Text shadow (on by default)
-- Active line glow (animates every frame)
-- Smooth sweep
-- Background and border opacity
+- **Text**: font (any installed family, or the DMS font), active line weight, other lines weight,
+  one line mode
+- **Effects**: cover and title header until the first line, text shadow (on by default),
+  active line glow (animates every frame), smooth sweep
+- **Player**: previous / play-pause / next buttons under the lyrics, their opacity, click a line
+  to seek
+- **Background**: background and border opacity
+
+Instrumental breaks show DMS's wavy ring filling up until the next line.
+
+After updating the plugin, restart DMS (`dms restart`): Quickshell keeps the old `lyrics/` types
+cached across a plugin reload.
 
 Lyrics providers, sync and the followed player come from DMS Settings → Media.
 

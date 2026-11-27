@@ -27,6 +27,7 @@ FocusScope {
     property bool shadow: false
     property bool glow: false
     property bool oneLine: false
+    property bool clickToSeek: true
 
     readonly property var controller: root.lyrics ?? LyricsService.controller
     readonly property bool ready: controller.state === "ready"
@@ -475,6 +476,7 @@ FocusScope {
                     leadFontSize: root.leadFontSize
                     leadMetrics: leadFontMetrics
                     breakSize: root.breakSize
+                    seekable: root.clickToSeek
                     backgroundMetrics: backgroundFontMetrics
                     onActivated: {
                         root.resume();

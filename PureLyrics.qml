@@ -6,6 +6,7 @@ import qs.Common
 import qs.Services
 import qs.Modules.Plugins
 import qs.Widgets
+import qs.DCommon.Widgets
 import "lyrics"
 
 // Renders a copy of DMS's lyrics view (lyrics/, from DMS 2.1.2) on the desktop. Lyrics come from the
@@ -23,6 +24,9 @@ DesktopPluginComponent {
     readonly property bool showHeader: pluginData.showHeader ?? true
     readonly property real backgroundOpacity: (pluginData.backgroundOpacity ?? 0) / 100
     readonly property real borderOpacity: (pluginData.borderOpacity ?? 0) / 100
+    readonly property bool showPlayer: pluginData.showPlayer ?? true
+    readonly property real playerOpacity: (pluginData.playerOpacity ?? 100) / 100
+    readonly property bool clickToSeek: pluginData.clickToSeek ?? true
 
     implicitWidth: 600
     implicitHeight: 260
@@ -48,6 +52,7 @@ DesktopPluginComponent {
     LyricsOverlay {
         id: overlay
         anchors.fill: parent
+        anchors.bottomMargin: transport.visible ? transport.height + Theme.spacingS * 2 : 0
         player: prefs
         radius: Theme.cornerRadius * 2
         backgroundColor: Theme.withAlpha(Theme.surfaceContainerHighest, root.backgroundOpacity)
@@ -57,6 +62,52 @@ DesktopPluginComponent {
         shadow: root.shadow
         glow: root.glow
         oneLine: root.oneLine
+        clickToSeek: root.clickToSeek
+    }
+
+    // Previous, play/pause, next under the lyrics, M3 expressive buttons in the DMS theme colours.
+    Row {
+        id: transport
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Theme.spacingS
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: Theme.spacingS
+        visible: root.showPlayer && root.playerOpacity > 0 && root.height >= 120
+        opacity: root.playerOpacity
+
+        DIconButton {
+            size: "m"
+            variant: "tonal"
+            iconName: "skip_previous"
+            iconFilled: true
+            enabled: !!root.player?.canGoPrevious || !!root.player?.canSeek
+            Accessible.name: I18n.tr("Previous")
+            onClicked: MprisController.previousOrRewind()
+        }
+
+        DIconButton {
+            readonly property bool playing: root.player?.playbackState === MprisPlaybackState.Playing
+            size: "m"
+            widthMode: "wide"
+            variant: "filled"
+            round: false
+            checkable: true
+            checked: playing
+            iconName: playing ? "pause" : "play_arrow"
+            enabled: !!root.player?.canTogglePlaying
+            Accessible.name: playing ? I18n.tr("Pause") : I18n.tr("Play")
+            onClicked: root.player.togglePlaying()
+        }
+
+        DIconButton {
+            size: "m"
+            variant: "tonal"
+            iconName: "skip_next"
+            iconFilled: true
+            enabled: !!root.player?.canGoNext
+            Accessible.name: I18n.tr("Next")
+            onClicked: MprisController.next()
+        }
     }
 
     Rectangle {

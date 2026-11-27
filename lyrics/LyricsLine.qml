@@ -56,6 +56,7 @@ Item {
     readonly property font leadFont: leadMetrics?.font ?? Qt.font({})
     readonly property font backgroundFont: backgroundMetrics?.font ?? Qt.font({})
 
+    property bool seekable: true
     signal activated
 
     function relayout() {
@@ -248,7 +249,7 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            enabled: !root.isPlain && root.controller.canSeekLines
+            enabled: root.seekable && !root.isPlain && root.controller.canSeekLines
             cursorShape: Qt.PointingHandCursor
             onClicked: root.activated()
         }
