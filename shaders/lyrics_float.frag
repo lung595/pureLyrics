@@ -24,11 +24,13 @@ layout(binding = 1) uniform sampler2D source;
 void main() {
     float x = mix(qt_TexCoord0.x, 1.0 - qt_TexCoord0.x, ubuf.rtl);
     float d = (x - ubuf.liftEdge) / max(ubuf.ramp, 1e-4);
-    float up = 1.0 - smoothstep(-1.0, 0.0, d);
-    float shine = exp(-d * d * 2.0) * step(0.0, ubuf.liftEdge);
+    // Sung glyphs sit a little up; the syllable at the edge rides a crest above them.
+    float crest = exp(-(d + 0.5) * (d + 0.5) * 3.0);
+    float up = 0.45 * (1.0 - smoothstep(-1.0, 0.0, d)) + 0.55 * crest;
+    float shine = crest * step(0.0, ubuf.liftEdge);
     vec2 uv = vec2(qt_TexCoord0.x, qt_TexCoord0.y + ubuf.lift * up);
     float lit = 1.0 - smoothstep(ubuf.edge, ubuf.edge + ubuf.feather, x);
     vec4 color = mix(ubuf.restColor, ubuf.fillColor, lit);
-    color.rgb = mix(color.rgb, vec3(color.a), 0.16 * shine * step(1e-4, ubuf.lift));
+    color.rgb = mix(color.rgb, vec3(color.a), 0.2 * shine * step(1e-4, ubuf.lift));
     fragColor = color * texture(source, uv).a * ubuf.qt_Opacity;
 }
