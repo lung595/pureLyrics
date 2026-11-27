@@ -76,7 +76,8 @@ DesktopPluginComponent {
         opacity: root.playerOpacity
 
         DIconButton {
-            size: "m"
+            size: "s"
+            widthMode: "wide"
             variant: "tonal"
             iconName: "skip_previous"
             iconFilled: true
@@ -87,7 +88,7 @@ DesktopPluginComponent {
 
         DIconButton {
             readonly property bool playing: root.player?.playbackState === MprisPlaybackState.Playing
-            size: "m"
+            size: "s"
             widthMode: "wide"
             variant: "filled"
             round: false
@@ -100,7 +101,8 @@ DesktopPluginComponent {
         }
 
         DIconButton {
-            size: "m"
+            size: "s"
+            widthMode: "wide"
             variant: "tonal"
             iconName: "skip_next"
             iconFilled: true
