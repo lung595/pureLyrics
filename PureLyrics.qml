@@ -25,8 +25,10 @@ DesktopPluginComponent {
     readonly property int restWeight: pluginData.restWeight ?? 500
     readonly property bool smoothSweep: pluginData.smoothSweep ?? false
     readonly property bool oneLine: pluginData.oneLine ?? false
-    readonly property bool shadow: pluginData.shadow ?? true
-    readonly property bool glow: pluginData.glow ?? false
+    // Low power drops the effects that redraw every frame while words are sung.
+    readonly property bool lowPower: pluginData.lowPower ?? true
+    readonly property bool shadow: !lowPower && (pluginData.shadow ?? true)
+    readonly property bool glow: !lowPower && (pluginData.glow ?? false)
     readonly property bool showHeader: pluginData.showHeader ?? true
     readonly property real backgroundOpacity: (pluginData.backgroundOpacity ?? 0) / 100
     readonly property real borderOpacity: (pluginData.borderOpacity ?? 0) / 100
@@ -40,8 +42,8 @@ DesktopPluginComponent {
     readonly property string playerPosition: pluginData.playerPosition ?? "center"
     // Where the column's cover overhangs its narrow buttons: "inner" toward the lyrics, "outer" toward the widget's edge.
     readonly property string coverSide: pluginData.coverSide ?? "inner"
-    readonly property real depthBlur: (pluginData.depthBlur ?? 40) / 100
-    readonly property bool floatWords: pluginData.floatWords ?? true
+    readonly property real depthBlur: lowPower ? 0 : (pluginData.depthBlur ?? 40) / 100
+    readonly property bool floatWords: !lowPower && (pluginData.floatWords ?? true)
     readonly property real textScale: (pluginData.textScale ?? 140) / 100
     readonly property real lineSpacing: pluginData.lineSpacing ?? 0
     readonly property real playerGap: pluginData.playerGap ?? 32
@@ -94,6 +96,40 @@ DesktopPluginComponent {
         property var lyricsFocusTarget: null
     }
 
+    // DMS only corrects drift past 1 s. A gap past 0.2 s seen on two probes in a row gets corrected here,
+    // and two probes keep one coarse Position from moving the lyrics.
+    Timer {
+        id: driftProbe
+        property real lastDrift: 0
+        interval: 2000
+        repeat: true
+        running: !!overlay && overlay.visible && overlay.synced && overlay.playing && overlay.controller.busName !== "" && DMSService.isConnected
+        onRunningChanged: lastDrift = 0
+        onTriggered: {
+            const c = overlay.controller;
+            const token = c.serial;
+            const name = c.busName;
+            DMSService.dbusGetProperty("session", name, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", "Position", response => {
+                if (token !== c.serial || name !== c.busName || !c.playing || response.error)
+                    return;
+                const observed = Number(response.result?.value) / 1e6;
+                const drift = observed - c.currentTime();
+                if (!Number.isFinite(drift) || Math.abs(drift) < 0.2 || Math.abs(drift) >= 1) {
+                    lastDrift = 0;
+                    return;
+                }
+                if (Math.sign(drift) !== Math.sign(lastDrift)) {
+                    lastDrift = drift;
+                    return;
+                }
+                lastDrift = 0;
+                c.anchorPosition = observed;
+                c.anchorWall = Date.now();
+                c.resync();
+            });
+        }
+    }
+
     LyricsOverlay {
         id: overlay
         anchors.fill: parent
@@ -112,6 +148,7 @@ DesktopPluginComponent {
         restScale: root.restScale
         depthBlur: root.depthBlur
         floatWords: root.floatWords
+        lowPower: root.lowPower
         textAlign: root.resolvedAlign
         leftRoom: root.playerSide === "left" ? root.playerRoom : 0
         rightRoom: root.playerSide === "right" ? root.playerRoom : 0

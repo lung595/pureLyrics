@@ -50,9 +50,12 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 - Lyrics come from DMS's shared `LyricsService`. The dash and this widget use one controller,
   so a song is fetched once.
 - The controller wakes on word and line cues, not on a fixed poll.
-- With **Smooth sweep** off (default), the fill only redraws on cues. Turn it on for the gliding
-  fill of the dash; it redraws every frame while a line is sung. **Floating words** (on by
-  default) also animate while a word is sung.
+- With **Smooth sweep** off (default), the fill only redraws on cues, estimated words included.
+  Turn it on for the gliding fill of the dash; it redraws every frame while a line is sung.
+- **Low power** (on by default) turns off floating words, depth blur, text shadow and glow, and
+  steps a smooth sweep at 30 fps. Turn it off to use those effects.
+- DMS only corrects lyrics that drift more than 1 s from the player. The widget checks the
+  player's position every 2 s while playing and corrects a drift past 0.2 s seen twice in a row.
 - The widget hides when no player is playing, and then drops its lyrics subscription.
 
 ## Settings
@@ -77,7 +80,8 @@ lines' options in one-line mode. **Reset to defaults** sits at the bottom (click
     is behind them when DMS blur is on)
   - *Seek*: click a line to seek
 - **Style**
-  - *Motion*: floating words, smooth sweep (redraws every frame while a line is sung)
+  - *Motion*: low power (on by default, hides the effect settings), floating words, smooth sweep
+    (redraws every frame while a line is sung)
   - *Depth*: depth blur on the lines around the sung one, text shadow (on by default), glow
     (animates every frame)
   - *Card*: background and border opacity

@@ -431,6 +431,15 @@ PluginSettings {
                             title: I18n.tr("Motion")
 
                             ToggleSetting {
+                                id: lowPowerSw
+                                settingKey: "lowPower"
+                                label: I18n.tr("Low power")
+                                description: I18n.tr("Turns off floating words, depth blur, shadow and glow, so the lyrics redraw only when a word changes. Off: those settings apply.")
+                                defaultValue: true
+                            }
+
+                            ToggleSetting {
+                                property bool shown: !lowPowerSw.value
                                 settingKey: "floatWords"
                                 label: I18n.tr("Floating words")
                                 description: I18n.tr("Each word rises and glows while it is sung, then the line settles.")
@@ -450,7 +459,7 @@ PluginSettings {
 
                             SliderSetting {
                                 // It blurs only the other lines, which one-line mode hides.
-                                property bool shown: !oneLineSw.value
+                                property bool shown: !oneLineSw.value && !lowPowerSw.value
                                 settingKey: "depthBlur"
                                 label: I18n.tr("Depth blur")
                                 description: I18n.tr("Lines away from the sung one go out of focus, like a camera. 0% turns it off.")
@@ -461,6 +470,7 @@ PluginSettings {
                             }
 
                             ToggleSetting {
+                                property bool shown: !lowPowerSw.value
                                 settingKey: "shadow"
                                 label: I18n.tr("Text shadow")
                                 description: I18n.tr("Soft shadow that keeps lyrics readable on light wallpapers.")
@@ -468,6 +478,7 @@ PluginSettings {
                             }
 
                             ToggleSetting {
+                                property bool shown: !lowPowerSw.value
                                 settingKey: "glow"
                                 label: I18n.tr("Glow")
                                 description: I18n.tr("Breathing halo behind the sung line. Animates every frame while playing.")

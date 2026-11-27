@@ -17,6 +17,8 @@ FocusScope {
     property color backgroundColor: DashMetrics.cardColor
     property bool following: true
     property real now: 0
+    // Low power steps a smooth sweep at 30 fps instead of every frame.
+    property bool lowPower: false
     property int pushedItem: -1
     property bool animateFollow: false
     property var heightCache: ({})
@@ -97,15 +99,23 @@ FocusScope {
     readonly property int trackedCentre: synced ? LyricsModel.centreItem(items, sampleTime, controller.followIndex) : -1
     property int centreItem: -1
     property real centreTime: -Infinity
-    // Only a word sweep or a break moves between the controller's cue ticks.
+    // Only a word sweep or a break moves every frame between the controller's cue ticks.
     readonly property bool needsClock: {
         const item = items[centreItem];
         if (!item)
             return false;
         if (item.kind === "break")
             return true;
-        return item.group.parts.some(part => part.estimated) || sweep && item.group.parts.some(part => part.w.length > 0);
+        return sweep && item.group.parts.some(part => part.w.length > 0);
     }
+    // Estimated words without a sweep only change at their own cues, which the controller does not tick.
+    readonly property bool needsCues: {
+        const item = items[centreItem];
+        return !needsClock && !!item && item.kind !== "break" && item.group.parts.some(part => part.estimated);
+    }
+    readonly property bool clockActive: visible && ready && synced && playing && needsClock
+    readonly property bool cueClockActive: visible && ready && synced && playing && needsCues
+    onCueClockActiveChanged: stepCue()
     readonly property bool userScrolling: transcript.isUserScrolling || transcript.dragging
     readonly property real shapeInset: Math.ceil(Math.min(radius, width / 2, height / 2) * (1 - Math.SQRT1_2))
     readonly property bool compact: content.height < Theme.listItemTwoLineHeight * 2
@@ -138,7 +148,11 @@ FocusScope {
         centreTime = sampleTime;
         centreItem = trackedCentre;
     }
-    onCentreItemChanged: requestFollow(true)
+    onCentreItemChanged: {
+        requestFollow(true);
+        if (cueClockActive)
+            stepCue();
+    }
     Component.onCompleted: centreItem = trackedCentre
     onItemsChanged: {
         pushedItem = -1;
@@ -154,8 +168,10 @@ FocusScope {
     onHeightChanged: requestFollow(false)
     onLeadFontSizeChanged: requestFollow(false)
     onSampleTimeChanged: {
-        if (!clock.running)
+        if (!clockActive)
             now = sampleTime;
+        if (cueClockActive)
+            stepCue();
     }
     onTrackKeyChanged: {
         if (controller.holdsSong())
@@ -383,9 +399,44 @@ FocusScope {
         onTriggered: root.followCurrent()
     }
 
+    // Wakes at the centre line's next cue only, so the scene redraws once per word instead of every frame.
+    function stepCue() {
+        cueClock.stop();
+        if (!cueClockActive)
+            return;
+        now = controller.shownTime();
+        let next = Infinity;
+        for (const part of items[centreItem]?.group?.parts ?? []) {
+            for (const cue of [part, ...part.w]) {
+                if (cue.t > now)
+                    next = Math.min(next, cue.t);
+                else if (cue.e > now)
+                    next = Math.min(next, cue.e);
+            }
+        }
+        if (!Number.isFinite(next))
+            return;
+        cueClock.interval = Math.max(1, Math.min(2147483647, Math.ceil((next - now) * 1000 / Math.max(0.01, controller.rate)) + 1));
+        cueClock.start();
+    }
+
+    Timer {
+        id: cueClock
+        onTriggered: root.stepCue()
+    }
+
     FrameAnimation {
         id: clock
-        running: root.visible && root.ready && root.synced && root.playing && root.needsClock
+        running: root.clockActive && !root.lowPower
+        onTriggered: root.now = root.controller.shownTime()
+        onRunningChanged: root.now = root.controller.shownTime()
+    }
+
+    Timer {
+        id: slowClock
+        interval: 33
+        repeat: true
+        running: root.clockActive && root.lowPower
         onTriggered: root.now = root.controller.shownTime()
         onRunningChanged: root.now = root.controller.shownTime()
     }
