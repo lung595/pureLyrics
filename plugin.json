@@ -1,9 +1,9 @@
 {
-    "id": "pureLyrics",
-    "name": "Pure Lyrics",
-    "description": "Floating desktop widget that shows DMS's synced lyrics view (word sweep, accent from cover art).",
+    "id": "pureLyricsPlus",
+    "name": "Pure Lyrics+",
+    "description": "Desktop lyrics in DMS's synced view: theme-coloured word fill, adjustable weights, player buttons, effects.",
     "version": "2.2.0",
-    "author": "lildengzi",
+    "author": "lung595 (fork of lildengzi/pureLyrics)",
     "category": "media",
     "type": "desktop",
     "capabilities": [

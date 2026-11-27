@@ -39,3 +39,9 @@ Lyrics providers, sync and the followed player come from DMS Settings → Media.
 ## Requirements
 
 - DMS >= 2.1.2 with the lyrics backend (`dms` server capability `lyrics`)
+
+## Plugin id
+
+The id is `pureLyricsPlus`, not `pureLyrics`. DMS's registry already lists `pureLyrics` (the
+upstream plugin), so with that id DMS showed the registry's metadata and checked this fork's
+git remote for updates.

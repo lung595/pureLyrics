@@ -8,7 +8,7 @@ import "settings"
 // Typing shows every matching setting across categories; Esc clears.
 PluginSettings {
     id: root
-    pluginId: "pureLyrics"
+    pluginId: "pureLyricsPlus"
 
     QtObject {
         id: view
