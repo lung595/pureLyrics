@@ -64,6 +64,9 @@ FocusScope {
     // Extra room kept free on each side, for a player column that is always shown.
     property real leftRoom: 0
     property real rightRoom: 0
+    // Vertical band (overlay coordinates) taken by whatever needs the room, e.g. a player column.
+    property real roomTop: 0
+    property real roomBottom: 0
     property real depthBlur: 0
     property bool floatWords: false
     property real restScale: DashMetrics.lyricsLineInactiveScale
@@ -486,17 +489,21 @@ FocusScope {
                     // Faded per row rather than through a layer over the view, so a sung word only repaints its own row.
                     readonly property real edgeDistance: Math.min(y + height / 2 - transcript.contentY, transcript.contentY + transcript.height - y - height / 2)
 
-                    // Room for a player column: the sung line clears it fully, its neighbours half, the rest
-                    // stay at the edge. Lines keep one width and only slide, so text never rewraps mid-move.
-                    property real indent: Math.max(0, 1 - depth / 2)
+                    // Room for a player column, in three steps so the edges line up: a line beside it clears it
+                    // fully, one within half its height clears half, the rest stay at the edge. Lines keep one
+                    // width and only slide, so text never rewraps while scrolling.
+                    readonly property real lineTop: content.y + viewport.y + y - transcript.contentY
+                    readonly property real gapToRoom: Math.max(0, root.roomTop - (lineTop + height), lineTop - root.roomBottom)
+                    property real indent: root.leftRoom + root.rightRoom <= 0 ? 0 : gapToRoom <= 0 ? 1 : gapToRoom < (root.roomBottom - root.roomTop) / 2 ? 0.5 : 0
                     Behavior on indent {
                         enabled: root.animationsEnabled
                         NumberAnimation {
-                            duration: line.moveDuration
+                            duration: 250
                             easing.type: Easing.OutCubic
                         }
                     }
                     width: transcript.width - root.leftRoom - root.rightRoom
+                    hangPunctuation: indent === 0
                     transform: Translate {
                         x: root.leftRoom * line.indent + root.rightRoom * (1 - line.indent)
                     }

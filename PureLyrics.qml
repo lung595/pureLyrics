@@ -105,6 +105,8 @@ DesktopPluginComponent {
         textAlign: root.resolvedAlign
         leftRoom: root.playerSide === "left" ? root.playerRoom : 0
         rightRoom: root.playerSide === "right" ? root.playerRoom : 0
+        roomTop: transport.y - Theme.spacingS
+        roomBottom: transport.y + transport.height + Theme.spacingS
         duetSides: root.duetSides
         singerName: root.singerName
         pointerOver: hover.hovered

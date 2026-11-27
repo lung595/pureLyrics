@@ -65,6 +65,8 @@ Item {
     property bool pointerOver: false
     // Room above the line for the singer chip, counted in the overlay's heights too.
     property real chipSpace: 0
+    // Off beside a player column: hanging punctuation would eat into the gap.
+    property bool hangPunctuation: true
     // Shown when the lyrics do not say who sings: the track artist and featured artists.
     property string artistLabel: ""
     // Pyramid: each line further from the sung one shrinks by this much more, toward the sung line.
@@ -511,7 +513,7 @@ Item {
                 }
 
                 // Opening or closing punctuation hangs past the aligned edge, so the letters line up.
-                readonly property real hang: lyricsPart.rtl ? 0 : lyricsPart.alignment === Text.AlignLeft ? -opening.advanceWidth : lyricsPart.alignment === Text.AlignRight ? closing.advanceWidth : 0
+                readonly property real hang: !root.hangPunctuation || lyricsPart.rtl ? 0 : lyricsPart.alignment === Text.AlignLeft ? -opening.advanceWidth : lyricsPart.alignment === Text.AlignRight ? closing.advanceWidth : 0
                 TextMetrics {
                     id: opening
                     font: glyphs.font

@@ -71,7 +71,7 @@ DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top
   active line glow (animates every frame), smooth sweep
 - **Player**: previous / play-pause / next buttons, in a row under the sung line (centre, left,
   right, or the lyrics' side) or in a column beside it (left or right, centred on the sung line;
-  shown always, it pushes the sung line aside and its neighbours half as far, with an adjustable gap). Shown on hover or always, their opacity (below 100%
+  shown always, the lines beside it step aside, those just past it half as far, with an adjustable gap). Shown on hover or always, their opacity (below 100%
   they blur what is behind them when DMS blur is on), click a line to seek
 - **Background**: background and border opacity
 
