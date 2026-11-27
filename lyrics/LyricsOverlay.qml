@@ -35,6 +35,7 @@ FocusScope {
     property string singerName: "change"
     property bool pointerOver: false
     property real pyramid: 0
+    property real distanceFade: 0
     property string artistLabel: ""
     // Space reserved above a line whose singer chip can show, so the chip never covers the line
     // before. "change" names the singer when the voice changes, or after a break without voices.
@@ -59,7 +60,8 @@ FocusScope {
     }
     // Bottom of the centred line, in this item's coordinates; the widget puts its player there.
     property real centreHeight: 0
-    readonly property real focusBottom: transcript.y + transcript.height / 2 + centreHeight / 2
+    // In overlay coordinates, so items outside the view (a player column) can line up with it.
+    readonly property real focusBottom: content.y + viewport.y + transcript.height / 2 + centreHeight / 2
     readonly property real focusCentre: focusBottom - centreHeight / 2
     // Extra room kept free on each side, for a player column that is always shown.
     property real leftRoom: 0
@@ -136,6 +138,9 @@ FocusScope {
     }
     onReadyChanged: requestFollow(false)
     onWidthChanged: requestFollow(false)
+    // Lines are narrower by the room a player column takes; their heights follow that width.
+    readonly property real lineWidth: Math.max(0, transcript.width - leftRoom - rightRoom)
+    onLineWidthChanged: requestFollow(false)
     onHeightChanged: requestFollow(false)
     onLeadFontSizeChanged: requestFollow(false)
     onSampleTimeChanged: {
@@ -244,7 +249,7 @@ FocusScope {
         const item = items[index];
         if (!item)
             return 0;
-        const layouts = item.kind === "line" ? LyricsModel.partLayouts(item.group.parts, transcript.width, leadFontMetrics, backgroundFontMetrics, Theme.spacingXS) : [];
+        const layouts = item.kind === "line" ? LyricsModel.partLayouts(item.group.parts, lineWidth, leadFontMetrics, backgroundFontMetrics, Theme.spacingXS) : [];
         return LyricsModel.rowHeight(item, layouts, breakSize, Theme.spacingS, Theme.spacingXS) + chipSpace(index);
     }
 
@@ -502,13 +507,13 @@ FocusScope {
                             easing.type: Easing.OutCubic
                         }
                     }
-                    width: transcript.width - root.leftRoom - root.rightRoom
+                    width: root.lineWidth
                     hangPunctuation: indent === 0
                     transform: Translate {
                         x: root.leftRoom * line.indent + root.rightRoom * (1 - line.indent)
                     }
                     // One-line mode shows the sung line only; the next one slides in as the old one fades.
-                    opacity: root.oneLine && root.synced ? (line.lit ? 1 : 0) : root.synced && root.edgeFade > 0 ? Math.max(0, Math.min(1, edgeDistance / root.edgeFade)) : 1
+                    opacity: (root.oneLine && root.synced ? (line.lit ? 1 : 0) : root.synced && root.edgeFade > 0 ? Math.max(0, Math.min(1, edgeDistance / root.edgeFade)) : 1) * line.fadeOpacity
                     Behavior on opacity {
                         enabled: root.oneLine && root.animationsEnabled
                         NumberAnimation {
@@ -544,6 +549,7 @@ FocusScope {
                     singerName: root.singerName
                     pointerOver: root.pointerOver
                     pyramid: root.pyramid
+                    distanceFade: root.distanceFade
                     artistLabel: root.artistLabel
                     before: index < root.centreItem
                     chipSpace: root.chipSpace(index)

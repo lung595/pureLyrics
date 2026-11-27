@@ -81,6 +81,17 @@ Item {
             return alignFor(lead.part);
         return textAlign === "left" ? Text.AlignLeft : textAlign === "right" ? Text.AlignRight : Text.AlignHCenter;
     }
+    // Distance fade: each line further from the sung one keeps this much less of its opacity.
+    property real distanceFade: 0
+    property real fadeOpacity: shrunk ? Math.pow(1 - distanceFade, Math.max(0, depth - 1)) : 1
+    Behavior on fadeOpacity {
+        enabled: root.animationsEnabled
+        NumberAnimation {
+            duration: root.moveDuration
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: root.moveCurve
+        }
+    }
     property real faceScale: shrunk ? shrinkScale : 1
     Behavior on faceScale {
         enabled: root.animationsEnabled

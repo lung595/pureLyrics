@@ -225,6 +225,16 @@ PluginSettings {
                         }
 
                         SliderSetting {
+                            settingKey: "distanceFade"
+                            label: I18n.tr("Distance fade")
+                            description: I18n.tr("Each line further from the sung one gets this much fainter (0 = all other lines equally visible)")
+                            defaultValue: 0
+                            minimum: 0
+                            maximum: 80
+                            unit: "%"
+                        }
+
+                        SliderSetting {
                             settingKey: "lineSpacing"
                             label: I18n.tr("Line spacing")
                             description: I18n.tr("Space between the middle line and the others (negative pulls them closer)")

@@ -43,6 +43,7 @@ DesktopPluginComponent {
     readonly property bool duetSides: pluginData.duetSides ?? true
     readonly property string singerName: pluginData.singerName ?? "change"
     readonly property real pyramid: (pluginData.pyramid ?? 15) / 100
+    readonly property real distanceFade: (pluginData.distanceFade ?? 0) / 100
     // Track artist plus a "feat." guest from the title when the artist field leaves it out.
     readonly property string artistLabel: {
         const artist = (player?.trackArtist ?? "").trim();
@@ -111,6 +112,7 @@ DesktopPluginComponent {
         singerName: root.singerName
         pointerOver: hover.hovered
         pyramid: root.pyramid
+        distanceFade: root.distanceFade
         artistLabel: root.artistLabel
     }
 

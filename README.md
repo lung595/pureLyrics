@@ -63,7 +63,7 @@ DMS Settings → Desktop Widgets → Pure Lyrics. A search field (Ctrl+F) on top
 - **Text**: font (any installed family, or the DMS font), alignment (auto, left, centre, right, or
   follow the widget's side of the screen), singers on their side in duets, singer name chip (the artist and featured artists when the lyrics do not name voices; when
   the singer changes, while they sing, on hover, off), middle line size, other lines size, pyramid
-  (each line further out is smaller), line spacing, active line weight, other lines weight,
+  (each line further out is smaller), distance fade (each line further out is fainter), line spacing, active line weight, other lines weight,
   one line mode
 - **Effects**: cover and title header until the first line (on the lyrics' side when they are
   aligned left or right), depth blur on the lines around the
