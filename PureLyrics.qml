@@ -1,24 +1,33 @@
 import QtQuick
+import QtQuick.Effects
+import Quickshell.Widgets
 import Quickshell.Services.Mpris
 import qs.Common
 import qs.Services
 import qs.Modules.Plugins
-import qs.Modules.DDash.Media
+import qs.Widgets
+import "lyrics"
 
-// Renders DMS's own lyrics view (LyricsOverlay) on the desktop. Lyrics come from the shared
-// LyricsService, so the dash and this widget never fetch the same song twice.
+// Renders a copy of DMS's lyrics view (lyrics/, from DMS 2.1.2) on the desktop. Lyrics come from the
+// shared LyricsService, so the dash and this widget never fetch the same song twice.
 DesktopPluginComponent {
     id: root
 
     readonly property string fontFamily: pluginData.fontFamily ?? ""
+    readonly property int activeWeight: pluginData.activeWeight ?? 800
+    readonly property int restWeight: pluginData.restWeight ?? 500
     readonly property bool smoothSweep: pluginData.smoothSweep ?? false
+    readonly property bool oneLine: pluginData.oneLine ?? false
+    readonly property bool shadow: pluginData.shadow ?? true
+    readonly property bool glow: pluginData.glow ?? false
+    readonly property bool showHeader: pluginData.showHeader ?? true
     readonly property real backgroundOpacity: (pluginData.backgroundOpacity ?? 0) / 100
     readonly property real borderOpacity: (pluginData.borderOpacity ?? 0) / 100
 
     implicitWidth: 600
     implicitHeight: 260
     minWidth: 200
-    minHeight: 80
+    minHeight: 60
 
     readonly property var player: MprisController.activePlayer
     // Hidden when nothing plays; the overlay then drops its LyricsService subscription too.
@@ -42,7 +51,12 @@ DesktopPluginComponent {
         player: prefs
         radius: Theme.cornerRadius * 2
         backgroundColor: Theme.withAlpha(Theme.surfaceContainerHighest, root.backgroundOpacity)
-        Component.onCompleted: root.applyFont()
+        fontFamily: root.fontFamily
+        activeWeight: root.activeWeight
+        restWeight: root.restWeight
+        shadow: root.shadow
+        glow: root.glow
+        oneLine: root.oneLine
     }
 
     Rectangle {
@@ -54,15 +68,67 @@ DesktopPluginComponent {
         visible: root.borderOpacity > 0
     }
 
-    // shortcut: LyricsOverlay exposes no font property, so this sets the family on its two
-    // measuring probes (found by their advanceWidth function); lines take the font from them.
-    // Breaks if DMS renames that inner component; upgrade if DMS adds a font property.
-    function applyFont() {
-        const family = fontFamily || Theme.fontFamily;
-        for (const child of overlay.children) {
-            if (typeof child.advanceWidth === "function")
-                child.font.family = family;
+    // Cover, title and artist until the first line is sung, then it fades away.
+    Row {
+        id: header
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: Theme.spacingM
+        width: Math.min(implicitWidth, parent.width - Theme.spacingM * 2)
+        spacing: Theme.spacingM
+        opacity: root.showHeader && root.height >= 140 && overlay.controller.activeIndex < 0 && !!root.player ? 1 : 0
+        visible: opacity > 0
+        layer.enabled: root.shadow
+        layer.effect: MultiEffect {
+            autoPaddingEnabled: true
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.55)
+            shadowBlur: 0.6
+            shadowVerticalOffset: 2
+        }
+        Behavior on opacity {
+            NumberAnimation { duration: 600; easing.type: Easing.OutCubic }
+        }
+
+        ClippingRectangle {
+            width: 48
+            height: 48
+            radius: Theme.cornerRadius
+            color: Theme.surfaceContainerHighest
+            visible: art.status === Image.Ready
+
+            Image {
+                id: art
+                anchors.fill: parent
+                source: TrackArtService.resolvedArtUrl
+                sourceSize: Qt.size(96, 96)
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+            }
+        }
+
+        Column {
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, header.parent.width - 48 - Theme.spacingM * 3)
+
+            StyledText {
+                width: parent.width
+                text: root.player?.trackTitle ?? ""
+                font.family: root.fontFamily || Theme.fontFamily
+                font.pixelSize: Theme.fontSizeLarge
+                font.weight: Theme.fontWeightBold
+                color: Theme.surfaceText
+                elide: Text.ElideRight
+            }
+
+            StyledText {
+                width: parent.width
+                text: root.player?.trackArtist ?? ""
+                font.family: root.fontFamily || Theme.fontFamily
+                font.pixelSize: Theme.fontSizeMedium
+                color: Theme.surfaceVariantText
+                elide: Text.ElideRight
+            }
         }
     }
-    onFontFamilyChanged: applyFont()
 }

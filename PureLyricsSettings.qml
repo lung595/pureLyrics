@@ -9,9 +9,55 @@ PluginSettings {
     SelectionSetting {
         settingKey: "fontFamily"
         label: I18n.tr("Font")
-        description: I18n.tr("Font of the lyrics. Lyrics sources and player follow DMS Settings → Media.")
+        description: I18n.tr("Font of the lyrics. Sources and player follow DMS Settings → Media.")
         defaultValue: ""
         options: [{ label: I18n.tr("DMS font"), value: "" }].concat(Qt.fontFamilies())
+    }
+
+    SliderSetting {
+        settingKey: "activeWeight"
+        label: I18n.tr("Active line weight")
+        description: I18n.tr("Boldness of the line being sung (400 regular, 700 bold, 900 black)")
+        defaultValue: 800
+        minimum: 300
+        maximum: 900
+    }
+
+    SliderSetting {
+        settingKey: "restWeight"
+        label: I18n.tr("Other lines weight")
+        description: I18n.tr("Boldness of the lines around it. Capped at the active line weight.")
+        defaultValue: 500
+        minimum: 300
+        maximum: 900
+    }
+
+    ToggleSetting {
+        settingKey: "oneLine"
+        label: I18n.tr("One line")
+        description: I18n.tr("Show only the sung line; the next one slides in as it fades")
+        defaultValue: false
+    }
+
+    ToggleSetting {
+        settingKey: "showHeader"
+        label: I18n.tr("Cover and title")
+        description: I18n.tr("Show cover, title and artist until the first line is sung")
+        defaultValue: true
+    }
+
+    ToggleSetting {
+        settingKey: "shadow"
+        label: I18n.tr("Text shadow")
+        description: I18n.tr("Soft shadow for light wallpapers. Low cost: redrawn only when a line changes.")
+        defaultValue: true
+    }
+
+    ToggleSetting {
+        settingKey: "glow"
+        label: I18n.tr("Active line glow")
+        description: I18n.tr("Breathing halo behind the sung line. Animates every frame while playing.")
+        defaultValue: false
     }
 
     ToggleSetting {

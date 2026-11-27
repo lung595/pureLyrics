@@ -4,7 +4,9 @@ A floating desktop widget that shows DMS's own synced lyrics view: word-by-word 
 scrolling, lines that grow into the centre, accent colours from the cover art.
 
 Fork of [lildengzi/pureLyrics](https://github.com/lildengzi/pureLyrics). Version 2 drops the
-plugin's own fetching and rendering and embeds DMS's `LyricsOverlay` instead.
+plugin's own fetching and rendering. `lyrics/` holds a copy of DMS 2.1.2's `LyricsOverlay`,
+`LyricsLine` and `LyricsModel.js` (MIT, see `lyrics/LICENSE-DMS`), changed for the options below.
+The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-art accent.
 
 ## Why it is light
 
@@ -20,6 +22,11 @@ plugin's own fetching and rendering and embeds DMS's `LyricsOverlay` instead.
 DMS Settings → Desktop Widgets → Pure Lyrics:
 
 - Font (any installed family, or the DMS font)
+- Active line weight and other lines weight
+- One line mode
+- Cover and title header until the first line
+- Text shadow (on by default)
+- Active line glow (animates every frame)
 - Smooth sweep
 - Background and border opacity
 
