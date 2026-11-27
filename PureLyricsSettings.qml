@@ -254,6 +254,23 @@ PluginSettings {
                             defaultValue: true
                         }
 
+                        SliderSetting {
+                            settingKey: "depthBlur"
+                            label: I18n.tr("Depth blur")
+                            description: I18n.tr("Lines away from the sung one go out of focus, like a camera (0 = off). Redrawn only while lines move.")
+                            defaultValue: 40
+                            minimum: 0
+                            maximum: 100
+                            unit: "%"
+                        }
+
+                        ToggleSetting {
+                            settingKey: "floatWords"
+                            label: I18n.tr("Floating words")
+                            description: I18n.tr("The word being sung lifts and brightens, then settles back")
+                            defaultValue: true
+                        }
+
                         ToggleSetting {
                             settingKey: "shadow"
                             label: I18n.tr("Text shadow")
@@ -287,6 +304,13 @@ PluginSettings {
                             settingKey: "showPlayer"
                             label: I18n.tr("Player buttons")
                             description: I18n.tr("Previous, play/pause and next under the lyrics, in the DMS theme colours")
+                            defaultValue: true
+                        }
+
+                        ToggleSetting {
+                            settingKey: "playerOnHover"
+                            label: I18n.tr("Show on hover")
+                            description: I18n.tr("Buttons appear when the pointer is over the widget and fade 2 s after it leaves")
                             defaultValue: true
                         }
 

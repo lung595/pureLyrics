@@ -57,6 +57,19 @@ Item {
     readonly property font backgroundFont: backgroundMetrics?.font ?? Qt.font({})
 
     property bool seekable: true
+    property real depth: 0
+    property real depthBlur: 0
+    property bool floatWords: false
+    // Lines away from the centre go out of focus, more with distance; the layer redraws only while it moves.
+    readonly property real blurAmount: synced && following && !promoted && !isBreak ? depthBlur * Math.min(1, depth / 3) : 0
+    property real shownBlur: blurAmount
+    Behavior on shownBlur {
+        enabled: root.animationsEnabled
+        NumberAnimation {
+            duration: root.moveDuration
+            easing.type: Easing.OutCubic
+        }
+    }
     property real restScale: DashMetrics.lyricsLineInactiveScale
     signal activated
 
@@ -168,10 +181,13 @@ Item {
             y: root.shift
         }
         // Re-rendered only when this line's content changes, not while the view scrolls.
-        layer.enabled: root.shadow
+        layer.enabled: root.shadow || root.shownBlur > 0.01
         layer.effect: MultiEffect {
             autoPaddingEnabled: true
-            shadowEnabled: true
+            blurEnabled: root.shownBlur > 0.01
+            blur: root.shownBlur
+            blurMax: 24
+            shadowEnabled: root.shadow
             shadowColor: Qt.rgba(0, 0, 0, 0.55)
             shadowBlur: 0.6
             shadowVerticalOffset: 2
@@ -316,6 +332,38 @@ Item {
                 }
                 readonly property real feather: width > 0 ? lead / width : 0
                 readonly property color restColor: !lyricsPart.timed && lyricsPart.sung ? lyricsPart.fillColor : lyricsPart.restColor
+                // Word being sung, as a [start, end] span of the row; the previous one settles as it rises.
+                readonly property bool floating: root.floatWords && root.promoted && root.animationsEnabled && lyricsPart.timed && !lyricsPart.part.background
+                readonly property int word: {
+                    if (!floating)
+                        return -1;
+                    const segments = modelData.segments;
+                    for (let i = 0; i < segments.length; i++)
+                        if (root.shownClock >= segments[i].t && root.shownClock < segments[i].e)
+                            return i;
+                    return -1;
+                }
+                property point current: Qt.point(2, 2)
+                property point previous: Qt.point(2, 2)
+                property real rise: 0
+                function span(i) {
+                    const segment = modelData.segments[i];
+                    return segment && width > 0 ? Qt.point(Math.max(0, segment.x0) / width, segment.x1 / width) : Qt.point(2, 2);
+                }
+                onWordChanged: {
+                    previous = current;
+                    current = span(word);
+                    rise = 0;
+                    riseAnimation.restart();
+                }
+                NumberAnimation {
+                    id: riseAnimation
+                    target: row
+                    property: "rise"
+                    to: 1
+                    duration: 260
+                    easing.type: Easing.OutBack
+                }
 
                 x: Math.round(lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2)
                 y: index * lyricsPart.layout.rowHeight
@@ -375,7 +423,11 @@ Item {
                     property real edge: row.edge
                     property real feather: row.feather
                     property real rtl: lyricsPart.rtl ? 1 : 0
-                    fragmentShader: Qt.resolvedUrl(Quickshell.shellPath("Shaders/qsb/lyrics_fill.frag.qsb"))
+                    property real lift: 0.06
+                    property real rise: row.rise
+                    property point current: row.current
+                    property point previous: row.previous
+                    fragmentShader: Qt.resolvedUrl("../shaders/lyrics_float.frag.qsb")
 
                     Behavior on restColor {
                         enabled: root.animationsEnabled

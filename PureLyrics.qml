@@ -27,6 +27,9 @@ DesktopPluginComponent {
     readonly property bool showPlayer: pluginData.showPlayer ?? true
     readonly property real playerOpacity: (pluginData.playerOpacity ?? 100) / 100
     readonly property bool clickToSeek: pluginData.clickToSeek ?? true
+    readonly property bool playerOnHover: pluginData.playerOnHover ?? true
+    readonly property real depthBlur: (pluginData.depthBlur ?? 40) / 100
+    readonly property bool floatWords: pluginData.floatWords ?? true
     readonly property real textScale: (pluginData.textScale ?? 140) / 100
     // Other lines size, relative to the middle line; layout keeps full-size rows, so capped at 100%.
     readonly property real restScale: (pluginData.restScale ?? 80) / 100
@@ -68,7 +71,20 @@ DesktopPluginComponent {
         clickToSeek: root.clickToSeek
         textScale: root.textScale
         restScale: root.restScale
+        depthBlur: root.depthBlur
+        floatWords: root.floatWords
     }
+
+    // With playerOnHover the buttons show while the pointer is over the widget and leave 2 s after it.
+    HoverHandler {
+        id: hover
+        onHoveredChanged: if (!hovered) hideTimer.restart()
+    }
+    Timer {
+        id: hideTimer
+        interval: 2000
+    }
+    readonly property bool playerShown: !playerOnHover || hover.hovered || hideTimer.running
 
     // Previous, play/pause, next under the lyrics, M3 expressive buttons in the DMS theme colours.
     Row {
@@ -78,14 +94,25 @@ DesktopPluginComponent {
         anchors.horizontalCenter: parent.horizontalCenter
         spacing: Theme.spacingS
         visible: root.showPlayer && root.playerOpacity > 0 && root.height >= 120
-        opacity: root.playerOpacity
+        opacity: root.playerShown ? root.playerOpacity : 0
+        // The space stays reserved so the lyrics never jump when the buttons come and go.
+        enabled: opacity > 0.05
+        transform: Translate {
+            y: root.playerShown ? 0 : Theme.spacingS
+            Behavior on y {
+                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+            }
+        }
+        Behavior on opacity {
+            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+        }
 
         DIconButton {
             size: "s"
             widthMode: "wide"
             variant: "tonal"
             iconName: "skip_previous"
-            iconFilled: true
+            iconFilled: false
             enabled: !!root.player?.canGoPrevious || !!root.player?.canSeek
             Accessible.name: I18n.tr("Previous")
             onClicked: MprisController.previousOrRewind()
@@ -110,7 +137,7 @@ DesktopPluginComponent {
             widthMode: "wide"
             variant: "tonal"
             iconName: "skip_next"
-            iconFilled: true
+            iconFilled: false
             enabled: !!root.player?.canGoNext
             Accessible.name: I18n.tr("Next")
             onClicked: MprisController.next()

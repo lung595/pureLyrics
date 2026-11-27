@@ -29,6 +29,8 @@ FocusScope {
     property bool oneLine: false
     property bool clickToSeek: true
     property real textScale: 1
+    property real depthBlur: 0
+    property bool floatWords: false
     property real restScale: DashMetrics.lyricsLineInactiveScale
 
     readonly property var controller: root.lyrics ?? LyricsService.controller
@@ -479,7 +481,10 @@ FocusScope {
                     leadMetrics: leadFontMetrics
                     breakSize: root.breakSize
                     seekable: root.clickToSeek
-                restScale: root.restScale
+                    restScale: root.restScale
+                    depth: Math.abs(index - root.centreItem)
+                    depthBlur: root.depthBlur
+                    floatWords: root.floatWords
                     backgroundMetrics: backgroundFontMetrics
                     onActivated: {
                         root.resume();
