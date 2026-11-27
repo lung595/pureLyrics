@@ -196,11 +196,21 @@ PluginSettings {
 
                         SliderSetting {
                             settingKey: "textScale"
-                            label: I18n.tr("Text size")
-                            description: I18n.tr("Size of the lyrics, relative to the widget size (100 = DMS dash size)")
+                            label: I18n.tr("Middle line size")
+                            description: I18n.tr("Size of the line being sung (100 = DMS dash size)")
                             defaultValue: 140
                             minimum: 60
                             maximum: 250
+                            unit: "%"
+                        }
+
+                        SliderSetting {
+                            settingKey: "restScale"
+                            label: I18n.tr("Other lines size")
+                            description: I18n.tr("Size of the past and next lines, relative to the middle line")
+                            defaultValue: 80
+                            minimum: 30
+                            maximum: 100
                             unit: "%"
                         }
 

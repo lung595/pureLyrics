@@ -57,6 +57,7 @@ Item {
     readonly property font backgroundFont: backgroundMetrics?.font ?? Qt.font({})
 
     property bool seekable: true
+    property real restScale: DashMetrics.lyricsLineInactiveScale
     signal activated
 
     function relayout() {
@@ -195,7 +196,7 @@ Item {
             width: parent.width
             height: root.breakSize
             active: root.isBreak
-            scale: root.shrunk ? DashMetrics.lyricsLineInactiveScale : 1
+            scale: root.shrunk ? root.restScale : 1
 
             Behavior on scale {
                 enabled: root.animationsEnabled
@@ -282,7 +283,7 @@ Item {
         height: layout.rows.length * layout.rowHeight
         // A background part still being sung keeps its size while the rest of its line shrinks. A lead
         // part that is still finishing as the next line moves in shrinks with its line.
-        scale: root.shrunk && !(part.background && root.clock >= part.t && root.clock < part.e) ? DashMetrics.lyricsLineInactiveScale : 1
+        scale: root.shrunk && !(part.background && root.clock >= part.t && root.clock < part.e) ? root.restScale : 1
         LayoutMirroring.enabled: false
         LayoutMirroring.childrenInherit: true
 

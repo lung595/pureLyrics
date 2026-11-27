@@ -28,6 +28,8 @@ DesktopPluginComponent {
     readonly property real playerOpacity: (pluginData.playerOpacity ?? 100) / 100
     readonly property bool clickToSeek: pluginData.clickToSeek ?? true
     readonly property real textScale: (pluginData.textScale ?? 140) / 100
+    // Other lines size, relative to the middle line; layout keeps full-size rows, so capped at 100%.
+    readonly property real restScale: (pluginData.restScale ?? 80) / 100
 
     implicitWidth: 600
     implicitHeight: 260
@@ -65,6 +67,7 @@ DesktopPluginComponent {
         oneLine: root.oneLine
         clickToSeek: root.clickToSeek
         textScale: root.textScale
+        restScale: root.restScale
     }
 
     // Previous, play/pause, next under the lyrics, M3 expressive buttons in the DMS theme colours.
