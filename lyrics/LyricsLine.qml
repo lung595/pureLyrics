@@ -337,12 +337,16 @@ Item {
                 // the word being sung over that word's own sung time (a held word rises slowly).
                 readonly property bool floating: root.floatWords && root.animationsEnabled && lyricsPart.timed && !lyricsPart.part.background
                 property real liftEdge: -1
+                // Width of the rising slope; each target runs a slope past a word's end so a finished word
+                // sits level instead of staying slanted.
+                readonly property real ramp: width > 0 ? lyricsPart.layout.rowHeight * 0.4 / width : 0
                 function retarget() {
                     if (!floating || width <= 0)
                         return;
                     if (root.sweep) {
                         liftAnimation.stop();
-                        liftEdge = edge;
+                        const last = modelData.segments[modelData.segments.length - 1];
+                        liftEdge = edge + (last && root.shownClock >= last.e ? ramp : 0);
                         return;
                     }
                     const at = root.shownClock;
@@ -350,12 +354,12 @@ Item {
                     liftAnimation.stop();
                     if (segment) {
                         liftAnimation.from = Math.max(liftEdge, segment.x0 / width);
-                        liftAnimation.to = segment.x1 / width;
+                        liftAnimation.to = segment.x1 / width + ramp;
                         liftAnimation.duration = Math.max(1, (segment.e - at) * 1000);
                         liftAnimation.easing.type = Easing.Linear;
                     } else {
                         liftAnimation.from = liftEdge;
-                        liftAnimation.to = edge;
+                        liftAnimation.to = edge > 0 ? edge + ramp : edge;
                         liftAnimation.duration = 200;
                         liftAnimation.easing.type = Easing.OutCubic;
                     }
@@ -443,7 +447,7 @@ Item {
                     property real rtl: lyricsPart.rtl ? 1 : 0
                     property real lift: 0.07 * row.floatAmount
                     property real liftEdge: row.liftEdge
-                    property real ramp: row.width > 0 ? lyricsPart.layout.rowHeight * 0.9 / row.width : 0
+                    property real ramp: row.ramp
                     fragmentShader: Qt.resolvedUrl("../shaders/lyrics_float.frag.qsb")
 
                     Behavior on restColor {
