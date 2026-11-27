@@ -1,21 +1,26 @@
 {
     "id": "pureLyrics",
     "name": "Pure Lyrics",
-    "description": "A minimal floating desktop widget that displays synced lyrics from multiple sources. No menus, no bloat - just lyrics.",
-    "version": "1.0.0",
+    "description": "Floating desktop widget that shows DMS's synced lyrics view (word sweep, accent from cover art).",
+    "version": "2.0.0",
     "author": "lildengzi",
     "category": "media",
     "type": "desktop",
-    "capabilities": ["desktop-widget"],
+    "capabilities": [
+        "desktop-widget"
+    ],
     "component": "./PureLyrics.qml",
     "settings": "./PureLyricsSettings.qml",
     "icon": "lyrics",
-    "requires_dms": ">=1.2.0",
-    "compositors": ["any"],
-    "distro": ["any"],
+    "requires_dms": ">=2.1.2",
+    "compositors": [
+        "any"
+    ],
+    "distro": [
+        "any"
+    ],
     "permissions": [
         "settings_read",
-        "settings_write",
-        "network"
+        "settings_write"
     ]
 }
