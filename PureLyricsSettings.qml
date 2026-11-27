@@ -310,7 +310,7 @@ PluginSettings {
                         ToggleSetting {
                             settingKey: "playerOnHover"
                             label: I18n.tr("Show on hover")
-                            description: I18n.tr("Buttons appear when the pointer is over the widget and fade 2 s after it leaves")
+                            description: I18n.tr("Buttons appear when the pointer is over the widget and fade 1 s after it leaves, right under the sung line")
                             defaultValue: true
                         }
 

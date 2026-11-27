@@ -58,7 +58,6 @@ DesktopPluginComponent {
     LyricsOverlay {
         id: overlay
         anchors.fill: parent
-        anchors.bottomMargin: transport.visible ? transport.height + Theme.spacingS * 2 : 0
         player: prefs
         radius: Theme.cornerRadius * 2
         backgroundColor: Theme.withAlpha(Theme.surfaceContainerHighest, root.backgroundOpacity)
@@ -75,27 +74,29 @@ DesktopPluginComponent {
         floatWords: root.floatWords
     }
 
-    // With playerOnHover the buttons show while the pointer is over the widget and leave 2 s after it.
+    // With playerOnHover the buttons show while the pointer is over the widget and leave 1 s after it.
     HoverHandler {
         id: hover
         onHoveredChanged: if (!hovered) hideTimer.restart()
     }
     Timer {
         id: hideTimer
-        interval: 2000
+        interval: 1000
     }
     readonly property bool playerShown: !playerOnHover || hover.hovered || hideTimer.running
 
     // Previous, play/pause, next under the lyrics, M3 expressive buttons in the DMS theme colours.
     Row {
         id: transport
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: Theme.spacingS
+        // Just under the sung line, over the next ones while shown; kept inside the widget.
+        y: Math.max(0, Math.min(overlay.focusBottom + Theme.spacingM, root.height - height - Theme.spacingS))
+        Behavior on y {
+            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+        }
         anchors.horizontalCenter: parent.horizontalCenter
         spacing: Theme.spacingS
         visible: root.showPlayer && root.playerOpacity > 0 && root.height >= 120
         opacity: root.playerShown ? root.playerOpacity : 0
-        // The space stays reserved so the lyrics never jump when the buttons come and go.
         enabled: opacity > 0.05
         transform: Translate {
             y: root.playerShown ? 0 : Theme.spacingS

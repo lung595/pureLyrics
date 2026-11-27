@@ -29,6 +29,9 @@ FocusScope {
     property bool oneLine: false
     property bool clickToSeek: true
     property real textScale: 1
+    // Bottom of the centred line, in this item's coordinates; the widget puts its player there.
+    property real centreHeight: 0
+    readonly property real focusBottom: transcript.y + transcript.height / 2 + centreHeight / 2
     property real depthBlur: 0
     property bool floatWords: false
     property real restScale: DashMetrics.lyricsLineInactiveScale
@@ -169,6 +172,7 @@ FocusScope {
         transcript.stopMomentum();
         transcript.forceLayout();
         heightCache = {};
+        centreHeight = cachedHeight(centre);
         const target = Math.round(centreOffset(centre));
         const delta = target - transcript.contentY;
         if (delta === 0)
