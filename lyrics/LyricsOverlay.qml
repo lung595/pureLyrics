@@ -75,6 +75,13 @@ FocusScope {
     property bool floatWords: false
     property real restScale: DashMetrics.lyricsLineInactiveScale
     property bool showAttribution: true
+    // Lines shrink with their distance from this one: the sung line, or while browsing the one at the view's centre.
+    property int browseCentre: -1
+    readonly property int depthCentre: following ? centreItem : browseCentre
+    property var squeezes: []
+    onDepthCentreChanged: updateSqueeze()
+    onRestScaleChanged: updateSqueeze()
+    onPyramidChanged: updateSqueeze()
 
     readonly property var controller: root.lyrics ?? LyricsService.controller
     readonly property bool ready: controller.state === "ready"
@@ -177,6 +184,7 @@ FocusScope {
 
     function browse() {
         following = false;
+        browseCentre = centreItem;
         scrollSpring.snapTo(transcript.contentY);
         settleRows();
     }
@@ -217,6 +225,7 @@ FocusScope {
         heightCache = {};
         centreHeight = cachedHeight(centre);
         centreChip = chipSpace(centre);
+        updateSqueeze();
         // A scroll on its way retargets to the active line on every step.
         if (scrollSpring.running)
             return;
@@ -279,6 +288,34 @@ FocusScope {
                 y -= cachedHeight(i) + transcript.spacing;
         }
         return y + cachedHeight(centre) / 2 - transcript.height / 2;
+    }
+
+    // The size a row shrinks to, as LyricsLine.faceScale once it settles.
+    function rowScale(index) {
+        const depth = Math.abs(index - depthCentre);
+        if (!synced || depth === 0 || items[index]?.kind === "plain")
+            return 1;
+        return restScale * Math.pow(1 - pyramid, depth - 1);
+    }
+
+    // Rows keep their full height in the view, so each one moves toward the centre line by the room
+    // the shrunk rows between them leave free, and the lines stay evenly spaced at any size. Set from
+    // handlers, since measuring a height writes the probe's text. Counted as far as rows can be laid out.
+    function updateSqueeze() {
+        const out = [];
+        if (depthCentre >= 0) {
+            for (const step of [-1, 1]) {
+                let sum = 0;
+                let reach = 0;
+                for (let i = depthCentre + step; i >= 0 && i < items.length && reach < transcript.height * 2; i += step) {
+                    out[i] = -step * sum;
+                    const height = cachedHeight(i);
+                    sum += (1 - rowScale(i)) * height;
+                    reach += height;
+                }
+            }
+        }
+        squeezes = out;
     }
 
     function cachedHeight(index) {
@@ -462,13 +499,21 @@ FocusScope {
                 showScrollBar: false
                 clip: false
                 reuseItems: true
-                cacheBuffer: Math.max(0, Math.round(height / 2))
+                // Shrunk rows squeeze toward the centre, so rows laid out further away still show.
+                cacheBuffer: Math.max(0, Math.round(height))
                 model: root.items
                 add: null
                 remove: null
                 displaced: null
                 move: null
                 onCountChanged: root.requestFollow(false)
+                onContentYChanged: {
+                    if (root.following)
+                        return;
+                    const index = indexAt(width / 2, contentY + height / 2);
+                    if (index >= 0)
+                        root.browseCentre = index;
+                }
                 header: Item {
                     width: transcript.width
                     height: root.endPadding
@@ -506,14 +551,17 @@ FocusScope {
 
                     required property var modelData
                     readonly property bool live: Math.abs(index - root.centreItem) <= 1
+                    // Where the row shows once shrunk and squeezed toward the centre line.
+                    readonly property real shownTop: y + squeeze + (before ? (1 - faceScale) * height : 0)
+                    readonly property real shownHeight: height * faceScale
                     // Faded per row rather than through a layer over the view, so a sung word only repaints its own row.
-                    readonly property real edgeDistance: Math.min(y + height / 2 - transcript.contentY, transcript.contentY + transcript.height - y - height / 2)
+                    readonly property real edgeDistance: Math.min(shownTop + shownHeight / 2 - transcript.contentY, transcript.contentY + transcript.height - shownTop - shownHeight / 2)
 
                     // Room for a player column, in three steps so the edges line up: a line beside it clears it
                     // fully, one within half its height clears half, the rest stay at the edge. Lines keep one
                     // width and only slide, so text never rewraps while scrolling.
-                    readonly property real lineTop: content.y + viewport.y + y - transcript.contentY
-                    readonly property real gapToRoom: Math.max(0, root.roomTop - (lineTop + height), lineTop - root.roomBottom)
+                    readonly property real lineTop: content.y + viewport.y + shownTop - transcript.contentY
+                    readonly property real gapToRoom: Math.max(0, root.roomTop - (lineTop + shownHeight), lineTop - root.roomBottom)
                     readonly property real indentTarget: root.leftRoom + root.rightRoom <= 0 ? 0 : gapToRoom <= 0 ? 1 : gapToRoom < (root.roomBottom - root.roomTop) / 2 ? 0.5 : 0
                     property real indent: indentTarget
                     Behavior on indent {
@@ -569,9 +617,10 @@ FocusScope {
                     pyramid: root.pyramid
                     distanceFade: root.distanceFade
                     artistLabel: root.artistLabel
-                    before: index < root.centreItem
+                    before: index < root.depthCentre
                     chipSpace: root.chipSpace(index)
-                    depth: Math.abs(index - root.centreItem)
+                    depth: Math.abs(index - root.depthCentre)
+                    squeeze: root.squeezes[index] ?? 0
                     depthBlur: root.depthBlur
                     floatWords: root.floatWords
                     backgroundMetrics: backgroundFontMetrics

@@ -48,7 +48,8 @@ Item {
     // Lines that wait or are done rest in one translucent colour, a single fade instead of a colour and
     // an opacity that move at different paces. While browsing every line stays fully visible.
     readonly property color restingColor: Theme.withAlpha(Theme.onSurfaceVariant, synced && following ? DashMetrics.lyricsLineInactiveAlpha : 1)
-    readonly property bool shrunk: synced && following && !isPlain && !promoted
+    // Depth counts from the sung line, or while browsing from the line at the view's centre.
+    readonly property bool shrunk: synced && !isPlain && depth > 0
     // Every part is wrapped here, so the height is known when the row is created. A height that
     // settles a frame later moves the rows around it while the view scrolls past. Measuring writes
     // the probe's text, so this is rebuilt from handlers rather than bound.
@@ -128,7 +129,7 @@ Item {
     property real depthBlur: 0
     property bool floatWords: false
     // Lines away from the centre go out of focus, more with distance; the layer redraws only while it moves.
-    readonly property real blurAmount: synced && following && !promoted && !isBreak ? depthBlur * Math.min(1, depth / 3) : 0
+    readonly property real blurAmount: shrunk && !isBreak ? depthBlur * Math.min(1, depth / 3) : 0
     property real shownBlur: blurAmount
     Behavior on shownBlur {
         enabled: root.animationsEnabled
@@ -138,6 +139,16 @@ Item {
         }
     }
     property real restScale: DashMetrics.lyricsLineInactiveScale
+    // Offset toward the centre line that closes the room left by the shrunk lines in between.
+    property real squeeze: 0
+    Behavior on squeeze {
+        enabled: root.animationsEnabled
+        NumberAnimation {
+            duration: root.moveDuration
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: root.moveCurve
+        }
+    }
     signal activated
 
     function relayout() {
@@ -252,7 +263,7 @@ Item {
                 yScale: root.faceScale
             },
             Translate {
-                y: root.shift
+                y: root.shift + root.squeeze
             }
         ]
         // Re-rendered only when this line's content changes, not while the view scrolls or shrinks.
@@ -354,7 +365,7 @@ Item {
                 yScale: root.faceScale
             },
             Translate {
-                y: root.shift
+                y: root.shift + root.squeeze
             }
         ]
 
