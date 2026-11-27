@@ -400,6 +400,11 @@ Item {
             }
 
             // Named once when the voice changes, then it fades.
+            Component.onCompleted: {
+                fresh = root.promoted && root.chipSpace > 0;
+                if (fresh)
+                    freshTimer.start();
+            }
             Connections {
                 target: root
                 function onPromotedChanged() {
@@ -508,7 +513,7 @@ Item {
                 }
                 // Visual [a, b) slices covering the whole row, cut halfway between words, with timings.
                 readonly property var words: {
-                    const segments = floating ? modelData.segments : [];
+                    const segments = floating && (root.promoted || floatAmount > 0) ? modelData.segments : [];
                     if (segments.length === 0 || width <= 0)
                         return [{ a: 0, b: width, t: Infinity, e: Infinity }];
                     const out = [];

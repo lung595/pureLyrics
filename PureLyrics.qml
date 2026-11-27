@@ -323,9 +323,10 @@ DesktopPluginComponent {
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(implicitWidth, header.parent.width - 48 - Theme.spacingM * 3)
+            width: Math.min(Math.max(title.implicitWidth, artist.implicitWidth), header.parent.width - 48 - Theme.spacingM * 3)
 
             StyledText {
+                id: title
                 width: parent.width
                 text: root.player?.trackTitle ?? ""
                 horizontalAlignment: header.textAlign
@@ -337,6 +338,7 @@ DesktopPluginComponent {
             }
 
             StyledText {
+                id: artist
                 width: parent.width
                 text: root.player?.trackArtist ?? ""
                 horizontalAlignment: header.textAlign

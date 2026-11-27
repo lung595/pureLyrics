@@ -60,9 +60,11 @@ FocusScope {
     }
     // Bottom of the centred line, in this item's coordinates; the widget puts its player there.
     property real centreHeight: 0
+    // The singer chip band at the top of the centred line, left out of its text centre.
+    property real centreChip: 0
     // In overlay coordinates, so items outside the view (a player column) can line up with it.
     readonly property real focusBottom: content.y + viewport.y + transcript.height / 2 + centreHeight / 2
-    readonly property real focusCentre: focusBottom - centreHeight / 2
+    readonly property real focusCentre: focusBottom - (centreHeight - centreChip) / 2
     // Extra room kept free on each side, for a player column that is always shown.
     property real leftRoom: 0
     property real rightRoom: 0
@@ -201,13 +203,19 @@ FocusScope {
     function followCurrent() {
         const animate = animateFollow && animationsEnabled && pushedItem >= 0;
         animateFollow = false;
-        if (!ready || !synced || !following || transcript.count === 0)
+        if (!ready || !synced) {
+            centreHeight = 0;
+            centreChip = 0;
+            return;
+        }
+        if (!following || transcript.count === 0)
             return;
         const centre = Math.max(0, centreItem);
         const jump = Math.abs(centre - pushedItem) > 1;
         pushedItem = centre;
         heightCache = {};
         centreHeight = cachedHeight(centre);
+        centreChip = chipSpace(centre);
         // A scroll on its way retargets to the active line on every step.
         if (scrollSpring.running)
             return;
@@ -504,7 +512,8 @@ FocusScope {
                     // width and only slide, so text never rewraps while scrolling.
                     readonly property real lineTop: content.y + viewport.y + y - transcript.contentY
                     readonly property real gapToRoom: Math.max(0, root.roomTop - (lineTop + height), lineTop - root.roomBottom)
-                    property real indent: root.leftRoom + root.rightRoom <= 0 ? 0 : gapToRoom <= 0 ? 1 : gapToRoom < (root.roomBottom - root.roomTop) / 2 ? 0.5 : 0
+                    readonly property real indentTarget: root.leftRoom + root.rightRoom <= 0 ? 0 : gapToRoom <= 0 ? 1 : gapToRoom < (root.roomBottom - root.roomTop) / 2 ? 0.5 : 0
+                    property real indent: indentTarget
                     Behavior on indent {
                         enabled: root.animationsEnabled
                         NumberAnimation {
@@ -513,9 +522,10 @@ FocusScope {
                         }
                     }
                     width: root.lineWidth
-                    hangPunctuation: indent === 0
+                    hangPunctuation: indentTarget === 0
+                    // Text aligned away from the column keeps its edge where the column is cleared.
                     transform: Translate {
-                        x: root.leftRoom * line.indent + root.rightRoom * (1 - line.indent)
+                        x: root.rightRoom > 0 && line.lineAlign === Text.AlignLeft ? 0 : root.leftRoom > 0 && line.lineAlign === Text.AlignRight ? root.leftRoom : root.leftRoom * line.indent + root.rightRoom * (1 - line.indent)
                     }
                     // One-line mode shows the sung line only; the next one slides in as the old one fades.
                     opacity: (root.oneLine && root.synced ? (line.lit ? 1 : 0) : root.synced && root.edgeFade > 0 ? Math.max(0, Math.min(1, edgeDistance / root.edgeFade)) : 1) * line.fadeOpacity
