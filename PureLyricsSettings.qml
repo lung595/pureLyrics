@@ -393,6 +393,16 @@ PluginSettings {
                             unit: "%"
                         }
 
+                        SliderSetting {
+                            settingKey: "playerGap"
+                            label: I18n.tr("Gap beside a column")
+                            description: I18n.tr("Space between a player column and the sung line. Lines further away step back toward the edge.")
+                            defaultValue: 32
+                            minimum: 0
+                            maximum: 120
+                            unit: "px"
+                        }
+
                         ToggleSetting {
                             settingKey: "clickToSeek"
                             label: I18n.tr("Click a line to seek")

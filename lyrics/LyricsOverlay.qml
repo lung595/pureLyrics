@@ -419,8 +419,6 @@ FocusScope {
             anchors.top: heading.visible ? heading.bottom : parent.top
             anchors.bottom: parent.bottom
             anchors.margins: Theme.spacingM
-            anchors.leftMargin: Theme.spacingM + root.leftRoom
-            anchors.rightMargin: Theme.spacingM + root.rightRoom
             visible: root.ready
             opacity: root.ready ? 1 : 0
 
@@ -488,7 +486,20 @@ FocusScope {
                     // Faded per row rather than through a layer over the view, so a sung word only repaints its own row.
                     readonly property real edgeDistance: Math.min(y + height / 2 - transcript.contentY, transcript.contentY + transcript.height - y - height / 2)
 
-                    width: transcript.width
+                    // Room for a player column: the sung line clears it fully, its neighbours half, the rest
+                    // stay at the edge. Lines keep one width and only slide, so text never rewraps mid-move.
+                    property real indent: Math.max(0, 1 - depth / 2)
+                    Behavior on indent {
+                        enabled: root.animationsEnabled
+                        NumberAnimation {
+                            duration: line.moveDuration
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                    width: transcript.width - root.leftRoom - root.rightRoom
+                    transform: Translate {
+                        x: root.leftRoom * line.indent + root.rightRoom * (1 - line.indent)
+                    }
                     // One-line mode shows the sung line only; the next one slides in as the old one fades.
                     opacity: root.oneLine && root.synced ? (line.lit ? 1 : 0) : root.synced && root.edgeFade > 0 ? Math.max(0, Math.min(1, edgeDistance / root.edgeFade)) : 1
                     Behavior on opacity {

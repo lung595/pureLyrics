@@ -36,6 +36,7 @@ DesktopPluginComponent {
     readonly property bool floatWords: pluginData.floatWords ?? true
     readonly property real textScale: (pluginData.textScale ?? 140) / 100
     readonly property real lineSpacing: pluginData.lineSpacing ?? 0
+    readonly property real playerGap: pluginData.playerGap ?? 32
     // Other lines size, relative to the middle line; layout keeps full-size rows, so capped at 100%.
     readonly property real restScale: (pluginData.restScale ?? 80) / 100
     readonly property string textAlign: pluginData.textAlign ?? "auto"
@@ -139,7 +140,7 @@ DesktopPluginComponent {
         return "center";
     }
     // An always shown column pushes the lyrics aside; on hover it floats over them so the text never jumps.
-    readonly property real playerRoom: playerColumn && transport.visible && !playerOnHover ? transport.width + Theme.spacingM : 0
+    readonly property real playerRoom: playerColumn && transport.visible && !playerOnHover ? transport.width + root.playerGap : 0
 
     // Previous, play/pause, next in a row under the sung line, or in a column beside it.
     Grid {
