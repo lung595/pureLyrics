@@ -63,10 +63,8 @@ Item {
     property bool duetSides: true
     property string singerName: "change"
     property bool pointerOver: false
-    // Lead voice of the line before, to name a singer only when the voice changes.
-    property string previousVoice: ""
-    // First line of the song or after a break: names the artist again when lyrics have no voices.
-    property bool afterBreak: false
+    // Room above the line for the singer chip, counted in the overlay's heights too.
+    property real chipSpace: 0
     // Shown when the lyrics do not say who sings: the track artist and featured artists.
     property string artistLabel: ""
     // Pyramid: each line further from the sung one shrinks by this much more, toward the sung line.
@@ -169,7 +167,7 @@ Item {
         }
     }
 
-    implicitHeight: isPlain ? plainLoader.height + Theme.spacingS * 2 : LyricsModel.rowHeight(item, layouts, breakSize, Theme.spacingS, Theme.spacingXS)
+    implicitHeight: isPlain ? plainLoader.height + Theme.spacingS * 2 : LyricsModel.rowHeight(item, layouts, breakSize, Theme.spacingS, Theme.spacingXS) + chipSpace
     height: implicitHeight
     Accessible.role: Accessible.StaticText
     Accessible.name: isBreak ? I18n.tr("Instrumental", "Track has no lyrics because it is instrumental") : isPlain ? item.text : item.group.x
@@ -265,7 +263,7 @@ Item {
             LyricsPart {
                 required property var modelData
 
-                y: Theme.spacingS + modelData.y
+                y: Theme.spacingS + root.chipSpace + modelData.y
                 width: face.width
                 layout: modelData
             }
@@ -360,10 +358,10 @@ Item {
             readonly property string name: part.voiceName || root.artistLabel
             readonly property bool named: !part.background && !!name
             property bool fresh: false
-            readonly property bool shown: named && root.promoted && root.following && (root.singerName === "singing" || root.singerName === "hover" && root.pointerOver || root.singerName === "change" && fresh)
+            readonly property bool shown: named && root.promoted && root.following && (root.singerName === "singing" || root.singerName === "hover" && root.pointerOver || root.singerName === "change" && fresh) && root.faceScale > 0.9
 
             x: alignment === Text.AlignLeft ? 0 : alignment === Text.AlignRight ? root.width - width : (root.width - width) / 2
-            y: Theme.spacingS + modelData.y - height - Theme.spacingXS
+            y: Theme.spacingS + root.chipSpace + modelData.y - height - Theme.spacingXS
             width: pill.width
             height: pill.height
             opacity: shown ? 1 : 0
@@ -383,7 +381,7 @@ Item {
             Behavior on opacity {
                 enabled: root.animationsEnabled
                 NumberAnimation {
-                    duration: chip.shown ? 220 : 500
+                    duration: chip.shown ? 260 : 140
                     easing.type: Easing.OutCubic
                 }
             }
@@ -392,7 +390,7 @@ Item {
             Connections {
                 target: root
                 function onPromotedChanged() {
-                    chip.fresh = root.promoted && (chip.part.voice ? chip.part.voice !== root.previousVoice : root.afterBreak);
+                    chip.fresh = root.promoted && root.chipSpace > 0;
                     if (chip.fresh)
                         freshTimer.restart();
                 }

@@ -36,8 +36,26 @@ FocusScope {
     property bool pointerOver: false
     property real pyramid: 0
     property string artistLabel: ""
-    function leadVoice(index) {
-        return items[index]?.group?.parts.find(part => !part.background)?.voice;
+    // Space reserved above a line whose singer chip can show, so the chip never covers the line
+    // before. "change" names the singer when the voice changes, or after a break without voices.
+    readonly property real chipHeight: Math.ceil(Theme.fontSizeSmall * 1.35) + Theme.spacingXS * 3
+    function leadPart(index) {
+        return items[index]?.group?.parts.find(part => !part.background);
+    }
+    function chipSpace(index) {
+        const part = leadPart(index);
+        if (!part || singerName === "off" || !(part.voiceName || artistLabel))
+            return 0;
+        if (singerName !== "change")
+            return chipHeight;
+        if (!part.voice)
+            return index === 0 || items[index - 1]?.kind !== "line" ? chipHeight : 0;
+        for (let i = index - 1; i >= 0; i--) {
+            const before = leadPart(i);
+            if (before)
+                return before.voice !== part.voice ? chipHeight : 0;
+        }
+        return chipHeight;
     }
     // Bottom of the centred line, in this item's coordinates; the widget puts its player there.
     property real centreHeight: 0
@@ -220,7 +238,7 @@ FocusScope {
         if (!item)
             return 0;
         const layouts = item.kind === "line" ? LyricsModel.partLayouts(item.group.parts, transcript.width, leadFontMetrics, backgroundFontMetrics, Theme.spacingXS) : [];
-        return LyricsModel.rowHeight(item, layouts, breakSize, Theme.spacingS, Theme.spacingXS);
+        return LyricsModel.rowHeight(item, layouts, breakSize, Theme.spacingS, Theme.spacingXS) + chipSpace(index);
     }
 
     // Counted from the row in the middle of the view, which is always laid out for real. The view
@@ -503,16 +521,8 @@ FocusScope {
                     pointerOver: root.pointerOver
                     pyramid: root.pyramid
                     artistLabel: root.artistLabel
-                    afterBreak: index === 0 || root.items[index - 1]?.kind !== "line"
                     before: index < root.centreItem
-                    previousVoice: {
-                        for (let i = index - 1; i >= 0; i--) {
-                            const voice = root.leadVoice(i);
-                            if (voice !== undefined)
-                                return voice;
-                        }
-                        return "";
-                    }
+                    chipSpace: root.chipSpace(index)
                     depth: Math.abs(index - root.centreItem)
                     depthBlur: root.depthBlur
                     floatWords: root.floatWords
