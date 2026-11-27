@@ -352,11 +352,12 @@ DesktopPluginComponent {
         }
     }
 
-    // In a column the header's cover sits on top of the buttons instead, spaced like them.
+    // In a column the header's cover sits on top of the buttons instead, spaced like them, its edge
+    // lined up with the buttons' edge on the lyrics' side.
     ClippingRectangle {
         id: columnCover
         readonly property bool shown: root.playerColumn && transport.visible && art.status === Image.Ready
-        x: transport.x + (transport.width - width) / 2
+        x: root.playerSide === "right" ? transport.x : Math.max(0, transport.x + transport.width - width)
         y: transport.y - height - transport.spacing
         width: 48
         height: 48
