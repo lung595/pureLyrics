@@ -47,7 +47,7 @@ FocusScope {
     readonly property bool playing: controller.playing
     readonly property real sampleTime: controller.sampleTime
     readonly property string trackKey: controller.trackKey
-    readonly property var items: synced ? LyricsModel.buildItems(controller.lines, DashMetrics.lyricsBreakGap) : LyricsModel.plainItems(controller.plainLines)
+    readonly property var items: synced ? LyricsModel.buildItems(LyricsModel.estimateWords(controller.lines), DashMetrics.lyricsBreakGap) : LyricsModel.plainItems(controller.plainLines)
     readonly property int trackedCentre: synced ? LyricsModel.centreItem(items, sampleTime, controller.followIndex) : -1
     property int centreItem: -1
     property real centreTime: -Infinity
@@ -58,7 +58,7 @@ FocusScope {
             return false;
         if (item.kind === "break")
             return true;
-        return sweep && item.group.parts.some(part => part.w.length > 0);
+        return item.group.parts.some(part => part.estimated) || sweep && item.group.parts.some(part => part.w.length > 0);
     }
     readonly property bool userScrolling: transcript.isUserScrolling || transcript.dragging
     readonly property real shapeInset: Math.ceil(Math.min(radius, width / 2, height / 2) * (1 - Math.SQRT1_2))

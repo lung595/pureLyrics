@@ -28,6 +28,44 @@ function buildItems(lines, breakGap) {
     return items;
 }
 
+// Lines synced per line only get word cues estimated from word length, spread over the time the
+// line is sung, so they still fill word by word. Marked estimated so the clock runs while sung.
+function estimateWords(lines) {
+    return lines.map(line => {
+        if (!line.parts || line.parts.every(part => part.w.length > 0))
+            return line;
+        return Object.assign({}, line, {
+            parts: line.parts.map(part => part.w.length > 0 ? part : Object.assign({}, part, {
+                w: estimateCues(part),
+                estimated: true
+            }))
+        });
+    });
+}
+
+function estimateCues(part) {
+    const text = part.x ?? "";
+    const words = text.match(/\S+\s*/g);
+    if (!words || !Number.isFinite(part.t))
+        return [];
+    const lead = text.length - words.join("").length;
+    words[0] = text.slice(0, lead) + words[0];
+    // Each word weighs its letters plus a beat for the attack; the line is sung over 90% of its
+    // slot, at most ~0.16 s per weight so a long pause after it is not filled slowly.
+    const weights = words.map(word => word.trim().length + 2);
+    const total = weights.reduce((a, b) => a + b, 0);
+    const slot = Number.isFinite(part.e) ? part.e - part.t : total * 0.08;
+    const span = Math.min(slot * 0.9, total * 0.16);
+    const cues = [];
+    let at = part.t;
+    for (let i = 0; i < words.length; i++) {
+        const length = span * weights[i] / total;
+        cues.push({ x: words[i], t: at, e: at + length });
+        at += length;
+    }
+    return cues;
+}
+
 function plainItems(lines) {
     return lines.map((text, i) => ({
                 kind: "plain",
