@@ -74,6 +74,7 @@ FocusScope {
     property real depthBlur: 0
     property bool floatWords: false
     property real restScale: DashMetrics.lyricsLineInactiveScale
+    property bool showAttribution: true
 
     readonly property var controller: root.lyrics ?? LyricsService.controller
     readonly property bool ready: controller.state === "ready"
@@ -474,7 +475,7 @@ FocusScope {
                 }
                 footer: Item {
                     width: transcript.width
-                    height: Math.max(root.endPadding, credit.implicitHeight + Theme.spacingM * 2)
+                    height: Math.max(root.endPadding, credit.visible ? credit.implicitHeight + Theme.spacingM * 2 : 0)
 
                     StyledText {
                         id: credit
@@ -483,6 +484,7 @@ FocusScope {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: Math.min(implicitWidth, parent.width)
                         text: root.controller.attributionName
+                        visible: root.showAttribution
                         color: Theme.outline
                         font.pixelSize: Theme.fontSizeSmall
                         elide: Text.ElideRight
@@ -493,7 +495,7 @@ FocusScope {
                         anchors.margins: -Theme.spacingXS
                         cornerRadius: Theme.cornerRadius
                         stateColor: Theme.outline
-                        visible: root.controller.attributionUrl !== ""
+                        visible: credit.visible && root.controller.attributionUrl !== ""
                         tooltipText: root.controller.attributionText || root.controller.attributionUrl
                         onClicked: Qt.openUrlExternally(root.controller.attributionUrl)
                     }

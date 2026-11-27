@@ -48,6 +48,7 @@ DesktopPluginComponent {
     readonly property string singerName: pluginData.singerName ?? "change"
     readonly property real pyramid: (pluginData.pyramid ?? 15) / 100
     readonly property real distanceFade: (pluginData.distanceFade ?? 0) / 100
+    readonly property bool showAttribution: pluginData.showAttribution ?? true
     // Track artist plus a "feat." guest from the title when the artist field leaves it out.
     readonly property string artistLabel: {
         const artist = (player?.trackArtist ?? "").trim();
@@ -118,6 +119,7 @@ DesktopPluginComponent {
         pyramid: root.pyramid
         distanceFade: root.distanceFade
         artistLabel: root.artistLabel
+        showAttribution: root.showAttribution
     }
 
     // With playerOnHover the buttons show while the pointer is over the widget and leave 1 s after it.
