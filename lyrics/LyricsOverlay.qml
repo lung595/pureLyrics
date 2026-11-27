@@ -35,6 +35,7 @@ FocusScope {
     property string singerName: "change"
     property bool pointerOver: false
     property real pyramid: 0
+    property string artistLabel: ""
     function leadVoice(index) {
         return items[index]?.group?.parts.find(part => !part.background)?.voice;
     }
@@ -501,6 +502,8 @@ FocusScope {
                     singerName: root.singerName
                     pointerOver: root.pointerOver
                     pyramid: root.pyramid
+                    artistLabel: root.artistLabel
+                    afterBreak: index === 0 || root.items[index - 1]?.kind !== "line"
                     before: index < root.centreItem
                     previousVoice: {
                         for (let i = index - 1; i >= 0; i--) {

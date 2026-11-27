@@ -39,6 +39,14 @@ DesktopPluginComponent {
     readonly property bool duetSides: pluginData.duetSides ?? true
     readonly property string singerName: pluginData.singerName ?? "change"
     readonly property real pyramid: (pluginData.pyramid ?? 15) / 100
+    // Track artist plus a "feat." guest from the title when the artist field leaves it out.
+    readonly property string artistLabel: {
+        const artist = (player?.trackArtist ?? "").trim();
+        const guest = /[(\[](?:feat\.?|ft\.?|with)\s+([^)\]]+)[)\]]/i.exec(player?.trackTitle ?? "")?.[1]?.trim() ?? "";
+        if (!guest || artist.toLowerCase().includes(guest.toLowerCase()))
+            return artist;
+        return artist ? artist + " ft. " + guest : guest;
+    }
     // "follow": aligned toward the screen edge the widget sits on (its window is placed at the widget).
     readonly property string resolvedAlign: {
         if (textAlign !== "follow")
@@ -95,6 +103,7 @@ DesktopPluginComponent {
         singerName: root.singerName
         pointerOver: hover.hovered
         pyramid: root.pyramid
+        artistLabel: root.artistLabel
     }
 
     // With playerOnHover the buttons show while the pointer is over the widget and leave 1 s after it.

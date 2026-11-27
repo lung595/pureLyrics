@@ -65,6 +65,10 @@ Item {
     property bool pointerOver: false
     // Lead voice of the line before, to name a singer only when the voice changes.
     property string previousVoice: ""
+    // First line of the song or after a break: names the artist again when lyrics have no voices.
+    property bool afterBreak: false
+    // Shown when the lyrics do not say who sings: the track artist and featured artists.
+    property string artistLabel: ""
     // Pyramid: each line further from the sung one shrinks by this much more, toward the sung line.
     property real pyramid: 0
     property bool before: false
@@ -319,7 +323,8 @@ Item {
             readonly property var part: modelData.part
             readonly property int alignment: root.alignFor(part)
             readonly property color accent: root.accentFor(part)
-            readonly property bool named: !part.background && !!part.voiceName && (part.side !== 0 || part.chorus)
+            readonly property string name: part.voiceName || root.artistLabel
+            readonly property bool named: !part.background && !!name
             property bool fresh: false
             readonly property bool shown: named && root.promoted && root.following && (root.singerName === "singing" || root.singerName === "hover" && root.pointerOver || root.singerName === "change" && fresh)
 
@@ -353,7 +358,7 @@ Item {
             Connections {
                 target: root
                 function onPromotedChanged() {
-                    chip.fresh = root.promoted && chip.part.voice !== root.previousVoice;
+                    chip.fresh = root.promoted && (chip.part.voice ? chip.part.voice !== root.previousVoice : root.afterBreak);
                     if (chip.fresh)
                         freshTimer.restart();
                 }
@@ -366,7 +371,7 @@ Item {
 
             Rectangle {
                 id: pill
-                width: label.implicitWidth + dot.width + Theme.spacingS * 3
+                width: Math.min(label.implicitWidth, root.width - dot.width - Theme.spacingS * 3) + dot.width + Theme.spacingS * 3
                 height: label.implicitHeight + Theme.spacingXS * 2
                 radius: height / 2
                 color: Theme.withAlpha(Theme.surfaceContainerHighest, 0.85)
@@ -384,7 +389,9 @@ Item {
                     id: label
                     x: dot.x + dot.width + Theme.spacingXS + 2
                     anchors.verticalCenter: parent.verticalCenter
-                    text: chip.part.voiceName
+                    width: pill.width - x - Theme.spacingS
+                    text: chip.name
+                    elide: Text.ElideRight
                     font.pixelSize: Theme.fontSizeSmall
                     font.weight: Font.Medium
                     color: chip.accent

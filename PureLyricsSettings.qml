@@ -276,7 +276,7 @@ PluginSettings {
                         SelectionSetting {
                             settingKey: "singerName"
                             label: I18n.tr("Singer name")
-                            description: I18n.tr("Name chip over the sung line, in the singer's colour. Needs lyrics that name voices (TTML).")
+                            description: I18n.tr("Name chip over the sung line, in the singer's colour. Lyrics that do not name voices (only local .ttml does) show the artist and featured artists.")
                             defaultValue: "change"
                             options: [
                                 { label: I18n.tr("When the singer changes"), value: "change" },
