@@ -56,3 +56,8 @@ Lyrics providers, sync and the followed player come from DMS Settings → Media.
 The id is `pureLyricsPlus`, not `pureLyrics`. DMS's registry already lists `pureLyrics` (the
 upstream plugin), so with that id DMS showed the registry's metadata and checked this fork's
 git remote for updates.
+
+## License
+
+MIT, see `LICENSE`. The files copied from DMS in `lyrics/` keep their own MIT notice
+(`lyrics/LICENSE-DMS`).
