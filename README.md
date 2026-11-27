@@ -71,8 +71,10 @@ lines' options in one-line mode. **Reset to defaults** sits at the bottom (click
 - **Player**
   - *Buttons*: previous / play-pause / next, shown on hover or always, position (a row under the
     sung line: centre, left, right or the lyrics' side; or a column beside it, left or right),
-    column gap (for a column shown always: the lines beside it step aside), opacity (below 100%
-    they blur what is behind them when DMS blur is on)
+    cover side (the column's cover overhangs toward the lyrics, by default, or the edge), keep room on
+    hover (a hover column keeps the lyrics clear of it too), column gap (for a column with room: the
+    lines beside it step aside), opacity (below 100% they blur what
+    is behind them when DMS blur is on)
   - *Seek*: click a line to seek
 - **Style**
   - *Motion*: floating words, smooth sweep (redraws every frame while a line is sung)

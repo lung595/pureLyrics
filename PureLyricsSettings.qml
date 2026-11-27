@@ -362,12 +362,34 @@ PluginSettings {
                                 ]
                             }
 
+                            SelectionSetting {
+                                // The cover only sits on a column while the header shows (columnCover in PureLyrics.qml).
+                                property bool shown: playerSw.value && positionSel.value.startsWith("column") && headerSw.value
+                                settingKey: "coverSide"
+                                label: I18n.tr("Cover side")
+                                description: I18n.tr("The cover above a column is wider than its buttons and overhangs one side.")
+                                defaultValue: "inner"
+                                options: [
+                                    { label: I18n.tr("Toward the lyrics"), value: "inner" },
+                                    { label: I18n.tr("Toward the edge"), value: "outer" }
+                                ]
+                            }
+
+                            ToggleSetting {
+                                id: hoverRoomSw
+                                property bool shown: playerSw.value && positionSel.value.startsWith("column") && hoverSw.value
+                                settingKey: "hoverRoom"
+                                label: I18n.tr("Keep room on hover")
+                                description: I18n.tr("The lyrics keep clear of the column even while it is hidden. Off: it floats over them.")
+                                defaultValue: false
+                            }
+
                             SliderSetting {
-                                // The gap only applies to a column shown always (playerRoom in PureLyrics.qml).
-                                property bool shown: playerSw.value && positionSel.value.startsWith("column") && !hoverSw.value
+                                // The gap only applies to a column with reserved room (playerRoom in PureLyrics.qml).
+                                property bool shown: playerSw.value && positionSel.value.startsWith("column") && (!hoverSw.value || hoverRoomSw.value)
                                 settingKey: "playerGap"
                                 label: I18n.tr("Column gap")
-                                description: I18n.tr("Space between an always-shown column and the sung line. Lines further out step back toward the edge.")
+                                description: I18n.tr("Space between the column and the sung line. Lines further out step back toward the edge.")
                                 defaultValue: 32
                                 minimum: 0
                                 maximum: 120
@@ -502,6 +524,7 @@ PluginSettings {
                             }
 
                             ToggleSetting {
+                                id: headerSw
                                 settingKey: "showHeader"
                                 label: I18n.tr("Cover and title")
                                 description: I18n.tr("Cover, title and artist until the first line is sung.")

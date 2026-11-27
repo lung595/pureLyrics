@@ -34,8 +34,12 @@ DesktopPluginComponent {
     readonly property real playerOpacity: (pluginData.playerOpacity ?? 100) / 100
     readonly property bool clickToSeek: pluginData.clickToSeek ?? true
     readonly property bool playerOnHover: pluginData.playerOnHover ?? true
+    // A hover column can still keep its room beside the lyrics, so it never covers them.
+    readonly property bool hoverRoom: pluginData.hoverRoom ?? false
     // center, left, right, follow (the text's side) in a row; columnLeft, columnRight stacked.
     readonly property string playerPosition: pluginData.playerPosition ?? "center"
+    // Where the column's cover overhangs its narrow buttons: "inner" toward the lyrics, "outer" toward the widget's edge.
+    readonly property string coverSide: pluginData.coverSide ?? "inner"
     readonly property real depthBlur: (pluginData.depthBlur ?? 40) / 100
     readonly property bool floatWords: pluginData.floatWords ?? true
     readonly property real textScale: (pluginData.textScale ?? 140) / 100
@@ -111,7 +115,7 @@ DesktopPluginComponent {
         textAlign: root.resolvedAlign
         leftRoom: root.playerSide === "left" ? root.playerRoom : 0
         rightRoom: root.playerSide === "right" ? root.playerRoom : 0
-        roomTop: transport.y - Theme.spacingS
+        roomTop: (columnCover.visible ? columnCover.y : transport.y) - Theme.spacingS
         roomBottom: transport.y + transport.height + Theme.spacingS
         duetSides: root.duetSides
         singerName: root.singerName
@@ -149,8 +153,17 @@ DesktopPluginComponent {
         }
         return "center";
     }
-    // An always shown column pushes the lyrics aside; on hover it floats over them so the text never jumps.
-    readonly property real playerRoom: playerColumn && transport.visible && !playerOnHover ? transport.width + root.playerGap : 0
+    // An always shown column pushes the lyrics aside; on hover it floats over them unless hoverRoom keeps
+    // its room reserved while hidden too, so the text never jumps either way.
+    // Measured from the column's widget-side edge to whichever reaches further in, buttons or the cover above them.
+    readonly property real playerRoom: {
+        if (!playerColumn || !transport.visible || playerOnHover && !hoverRoom)
+            return 0;
+        const left = transport.x, right = transport.x + transport.width;
+        if (!columnCover.visible)
+            return transport.width + playerGap;
+        return (playerSide === "left" ? Math.max(right, columnCover.x + columnCover.width) - left : right - Math.min(left, columnCover.x)) + playerGap;
+    }
 
     // Previous, play/pause, next in a row under the sung line, or in a column beside it.
     Grid {
@@ -352,12 +365,13 @@ DesktopPluginComponent {
         }
     }
 
-    // In a column the header's cover sits on top of the buttons instead, spaced like them, its edge
-    // lined up with the buttons' edge on the lyrics' side.
+    // In a column the header's cover sits on top of the buttons instead, spaced like them. It is wider
+    // than the narrow buttons, so one edge lines up with theirs and it overhangs toward coverSide, kept in the widget.
     ClippingRectangle {
         id: columnCover
         readonly property bool shown: root.playerColumn && transport.visible && art.status === Image.Ready
-        x: root.playerSide === "right" ? transport.x : Math.max(0, transport.x + transport.width - width)
+        readonly property bool alignLeft: (root.playerSide === "left") === (root.coverSide === "inner")
+        x: Math.max(0, Math.min(root.width - width, alignLeft ? transport.x : transport.x + transport.width - width))
         y: transport.y - height - transport.spacing
         width: 48
         height: 48
