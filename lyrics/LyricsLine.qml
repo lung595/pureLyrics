@@ -332,59 +332,32 @@ Item {
                 }
                 readonly property real feather: width > 0 ? lead / width : 0
                 readonly property color restColor: !lyricsPart.timed && lyricsPart.sung ? lyricsPart.fillColor : lyricsPart.restColor
-                // Floating words rise letter by letter at the singer's pace. With the smooth sweep the lift
-                // rides the fill edge; without it the fill steps per word, so on each cue the lift crosses
-                // the word being sung over that word's own sung time (a held word rises slowly).
+                // Floating words: each word rises as one solid piece over the time it is sung (a held word
+                // rises slowly), glows while sung, and the line settles once it is no longer sung. Each word
+                // draws its slice of the row through its own shader, so the glyphs never bend.
                 readonly property bool floating: root.floatWords && root.animationsEnabled && lyricsPart.timed && !lyricsPart.part.background
-                property real liftEdge: -1
-                // Width of the rising slope; each target runs a slope past a word's end so a finished word
-                // sits level instead of staying slanted.
-                readonly property real ramp: width > 0 ? lyricsPart.layout.rowHeight * 0.35 / width : 0
-                function retarget() {
-                    if (!floating || width <= 0)
-                        return;
-                    if (root.sweep) {
-                        liftAnimation.stop();
-                        const last = modelData.segments[modelData.segments.length - 1];
-                        liftEdge = edge + (last && root.shownClock >= last.e ? ramp * 2 : 0);
-                        return;
-                    }
-                    const at = root.shownClock;
-                    const segment = modelData.segments.find(s => at >= s.t && at < s.e);
-                    liftAnimation.stop();
-                    if (segment) {
-                        liftAnimation.from = Math.max(liftEdge, segment.x0 / width);
-                        liftAnimation.to = segment.x1 / width + ramp * 2;
-                        liftAnimation.duration = Math.max(1, (segment.e - at) * 1000);
-                        liftAnimation.easing.type = Easing.Linear;
-                    } else {
-                        liftAnimation.from = liftEdge;
-                        liftAnimation.to = edge > 0 ? edge + ramp * 2 : edge;
-                        liftAnimation.duration = 200;
-                        liftAnimation.easing.type = Easing.OutCubic;
-                    }
-                    liftAnimation.start();
-                }
-                onEdgeChanged: retarget()
-                Connections {
-                    target: root
-                    enabled: row.floating && !root.sweep
-                    function onShownClockChanged() {
-                        row.retarget();
-                    }
-                }
-                NumberAnimation {
-                    id: liftAnimation
-                    target: row
-                    property: "liftEdge"
-                    paused: running && !root.playing
-                }
                 property real floatAmount: floating && root.promoted ? 1 : 0
                 Behavior on floatAmount {
                     NumberAnimation {
                         duration: root.moveDuration
                         easing.type: Easing.InOutSine
                     }
+                }
+                // Visual [a, b) slices covering the whole row, cut halfway between words, with timings.
+                readonly property var words: {
+                    const segments = floating ? modelData.segments : [];
+                    if (segments.length === 0 || width <= 0)
+                        return [{ a: 0, b: width, t: Infinity, e: Infinity }];
+                    const out = [];
+                    for (let i = 0; i < segments.length; i++) {
+                        const s = segments[i];
+                        const start = i === 0 ? 0 : (segments[i - 1].x1 + s.x0) / 2;
+                        const end = i === segments.length - 1 ? width : (s.x1 + segments[i + 1].x0) / 2;
+                        const a = lyricsPart.rtl ? width - end : start;
+                        const b = lyricsPart.rtl ? width - start : end;
+                        out.push({ a: Math.floor(a), b: Math.ceil(b), t: s.t, e: s.e });
+                    }
+                    return out;
                 }
 
                 x: Math.round(lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2)
@@ -437,30 +410,77 @@ Item {
                     }
                 }
 
-                ShaderEffect {
-                    anchors.fill: parent
-                    property var source: glyphSource
-                    property color restColor: row.restColor
-                    property color fillColor: lyricsPart.fillColor
-                    property real edge: row.edge
-                    property real feather: row.feather
-                    property real rtl: lyricsPart.rtl ? 1 : 0
-                    property real lift: 0.12 * row.floatAmount
-                    property real liftEdge: row.liftEdge
-                    property real ramp: row.ramp
-                    fragmentShader: Qt.resolvedUrl("../shaders/lyrics_float.frag.qsb")
+                Repeater {
+                    model: row.words
 
-                    Behavior on restColor {
-                        enabled: root.animationsEnabled
-                        ColorAnimation {
-                            duration: root.moveDuration
+                    Item {
+                        id: word
+
+                        required property var modelData
+                        readonly property bool started: root.shownClock >= modelData.t
+                        readonly property bool singing: started && root.shownClock < modelData.e
+                        property real rise: 0
+                        property real shine: singing && row.floatAmount > 0 ? 1 : 0
+
+                        x: modelData.a
+                        width: modelData.b - modelData.a
+                        height: row.height
+                        clip: true
+                        transform: Translate {
+                            y: -row.height * 0.08 * word.rise * row.floatAmount
                         }
-                    }
 
-                    Behavior on fillColor {
-                        enabled: root.animationsEnabled
-                        ColorAnimation {
-                            duration: root.moveDuration
+                        Component.onCompleted: rise = started ? 1 : 0
+                        onStartedChanged: {
+                            riseAnimation.stop();
+                            if (!started) {
+                                rise = 0;
+                                return;
+                            }
+                            riseAnimation.duration = Math.max(280, Math.min(1600, (modelData.e - root.shownClock) * 1000));
+                            riseAnimation.start();
+                        }
+                        NumberAnimation {
+                            id: riseAnimation
+                            target: word
+                            property: "rise"
+                            to: 1
+                            easing.type: Easing.OutCubic
+                            paused: running && !root.playing
+                        }
+                        Behavior on shine {
+                            NumberAnimation {
+                                duration: word.singing ? 180 : 700
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        ShaderEffect {
+                            x: -word.x
+                            width: row.width
+                            height: row.height
+                            property var source: glyphSource
+                            property color restColor: row.restColor
+                            property color fillColor: lyricsPart.fillColor
+                            property real edge: row.edge
+                            property real feather: row.feather
+                            property real rtl: lyricsPart.rtl ? 1 : 0
+                            property real shine: word.shine
+                            fragmentShader: Qt.resolvedUrl("../shaders/lyrics_float.frag.qsb")
+
+                            Behavior on restColor {
+                                enabled: root.animationsEnabled
+                                ColorAnimation {
+                                    duration: root.moveDuration
+                                }
+                            }
+
+                            Behavior on fillColor {
+                                enabled: root.animationsEnabled
+                                ColorAnimation {
+                                    duration: root.moveDuration
+                                }
+                            }
                         }
                     }
                 }

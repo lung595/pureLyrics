@@ -277,7 +277,7 @@ PluginSettings {
                         ToggleSetting {
                             settingKey: "floatWords"
                             label: I18n.tr("Floating words")
-                            description: I18n.tr("Sung words lift along the fill with a soft light at its edge; the line settles when done")
+                            description: I18n.tr("Each word rises as one piece while it is sung and glows, then the line settles")
                             defaultValue: true
                         }
 
