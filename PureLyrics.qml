@@ -55,15 +55,17 @@ DesktopPluginComponent {
     readonly property real pyramid: (pluginData.pyramid ?? 15) / 100
     readonly property real distanceFade: (pluginData.distanceFade ?? 0) / 100
     readonly property bool showAttribution: pluginData.showAttribution ?? true
-    // "feat." guests named in the title, e.g. "Song (ft. A et B)".
+    // "feat." guests named in the title, e.g. "Song (ft. A & B)".
     readonly property string titleGuest: /[(\[](?:feat\.?|ft\.?|with)\s+([^)\]]+)[)\]]/i.exec(player?.trackTitle ?? "")?.[1]?.trim() ?? ""
     // Credited artists in order: the player's artist list, then the title's guests, without repeats.
-    // Unnamed voices of the lyrics are matched to it by number (v2 → second credit).
-    // shortcut: a single artist string like "A, B" stays one credit, since "Tyler, The Creator" holds a comma.
+    // Unnamed voices of the lyrics are matched to it by number (v2 → second credit), less the names the lyrics give.
+    // Guests split only on "," and " & ", so "Simon and Garfunkel" stays one name.
+    // shortcut: a single artist string like "A, B" stays one credit, since "Tyler, The Creator" holds a comma,
+    // but such a name in the title's guest list splits in two; upgrade if a player gives guests as a list.
     readonly property var credits: {
         const listed = player?.metadata?.["xesam:artist"];
         const artists = typeof listed === "object" && listed?.length > 0 ? Array.from(listed) : [player?.trackArtist ?? ""];
-        const guests = titleGuest.split(/\s*,\s*|\s+(?:&|et|and|x)\s+/i);
+        const guests = titleGuest.split(/\s*,\s*|\s+&\s+/);
         const names = [];
         for (const name of artists.concat(guests).map(entry => String(entry).trim())) {
             if (name && !names.some(known => known.toLowerCase() === name.toLowerCase()))

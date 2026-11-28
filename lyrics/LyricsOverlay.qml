@@ -46,9 +46,12 @@ FocusScope {
     function leadPart(index) {
         return items[index]?.group?.parts.find(part => !part.background);
     }
+    // Once per lyrics, not per chip.
+    readonly property var voiceCredits: LyricsModel.voiceCredits(controller.lines, credits)
     function chipSpace(index) {
         const part = leadPart(index);
-        if (!part || singerName === "off" || !LyricsModel.singerFor(part, credits, artistLabel))
+        // The line draws a chip per part, so any named one needs the room.
+        if (!part || singerName === "off" || !items[index].group.parts.some(each => !each.background && LyricsModel.singerFor(each, voiceCredits, artistLabel)))
             return 0;
         if (singerName !== "change")
             return chipHeight;
@@ -669,7 +672,7 @@ FocusScope {
                     pyramid: root.pyramid
                     distanceFade: root.distanceFade
                     artistLabel: root.artistLabel
-                    credits: root.credits
+                    credits: root.voiceCredits
                     before: index < root.depthCentre
                     chipSpace: root.chipSpace(index)
                     depth: Math.abs(index - root.depthCentre)

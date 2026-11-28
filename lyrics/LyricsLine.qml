@@ -72,6 +72,7 @@ Item {
     property bool hangPunctuation: true
     // Shown when the lyrics do not say who sings: the track artist and featured artists.
     property string artistLabel: ""
+    // By voice number, from the overlay's voiceCredits.
     property var credits: []
     // Pyramid: each line further from the sung one shrinks by this much more, toward the sung line.
     property real pyramid: 0

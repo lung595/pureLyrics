@@ -248,14 +248,37 @@ function isRtl(text) {
     return false;
 }
 
-// Who sings a part: the voice's own name, else the credited artist at the voice's number (v2 is the
-// second credit), else the track's artist for lyrics without voices. A voice with no matching credit,
-// or a group voice (v1000 and up), gets no name rather than the wrong one.
+// Credits for the unnamed singers of a duet, by voice number: voice n keeps the nth credit unless
+// the lyrics name it already, else takes the next credit nobody has, so a named v1 and an unnamed v2
+// never show the same artist, even when v1's name is spelled unlike its credit.
+function voiceCredits(lines, credits) {
+    const parts = lines.flatMap(line => line.parts ?? []);
+    const used = new Set(parts.map(part => part.voiceName.toLowerCase()).filter(name => name));
+    const numbers = [...new Set(parts.filter(part => part.side !== 0 && !part.voiceName).map(part => Number(/^v(\d+)$/.exec(part.voice)?.[1] ?? 0)))].filter(number => number > 0).sort((a, b) => a - b);
+    const byVoice = [];
+    numbers.forEach(number => {
+        const own = credits[number - 1];
+        const pick = own && !used.has(own.toLowerCase()) ? own : credits.find(name => !used.has(name.toLowerCase()));
+        if (pick) {
+            byVoice[number - 1] = pick;
+            used.add(pick.toLowerCase());
+        }
+    });
+    return byVoice;
+}
+
+// Who sings a part: the voice's own name, else the credit voiceCredits gave its number, else the
+// track's artist for lyrics with one singer or none. A voice with no matching credit, or a group
+// voice, gets no name rather than the wrong one.
 function singerFor(part, credits, artistLabel) {
     if (part.voiceName)
         return part.voiceName;
-    if (!part.voice)
-        return artistLabel;
     const number = Number(/^v(\d+)$/.exec(part.voice)?.[1] ?? 0);
-    return number > 0 && number < 1000 ? credits[number - 1] ?? "" : "";
+    // One singer: numbering would name only the first credited artist of "A ft. B". The controller
+    // flags chorus only in duets, so a solo song's group voice (v1000+) is caught by its number.
+    if (!part.voice || part.side === 0 && !part.chorus)
+        return number >= 1000 ? "" : artistLabel;
+    if (part.chorus)
+        return "";
+    return number > 0 ? credits[number - 1] ?? "" : "";
 }
