@@ -232,10 +232,15 @@ DesktopPluginComponent {
         interval: 1000
     }
     readonly property bool playerShown: !playerOnHover || hover.hovered || hideTimer.running
-    // A column needs the height of three buttons; a widget too short for it keeps a row on the same side.
+    // A column needs the height of its buttons (1, 1.5, 1, then 0.75 for the swap) and, while the header shows,
+    // of the header and the cover above them, as transport.minY counts; a widget too short for it keeps a row on the same side.
     // Its buttons are narrow so the column stays thin beside the lyrics.
+    // Measured from prevButton, headerText, the art and sourceButton.wanted, none of which depends on playerColumn, to avoid a binding loop.
+    // The header counts whenever it can show, not only while it does, so the layout does not flip row/column on each song.
     readonly property bool playerColumn: (playerPosition === "columnLeft" || playerPosition === "columnRight")
-        && height >= prevButton.height * 3 + transport.spacing * 2 + Theme.spacingS * 2
+        && height >= prevButton.height * (3.5 + (sourceButton.wanted ? 0.75 : 0)) + transport.spacing * (sourceButton.wanted ? 3 : 2)
+            + (root.showHeader && root.height >= 140 ? header.y + headerText.height + Theme.spacingS + (art.status === Image.Ready ? columnCover.height + transport.spacing : 0) : Theme.spacingS)
+            + Theme.spacingS
     readonly property string playerSide: {
         switch (playerPosition) {
         case "left":
@@ -266,13 +271,14 @@ DesktopPluginComponent {
         id: transport
         readonly property real edge: Math.max(Theme.spacingM, overlay.shapeInset)
         readonly property real minY: (header.visible ? header.y + header.height + Theme.spacingS : Theme.spacingS) + (columnCover.visible ? columnCover.height + spacing : 0)
-        columns: root.playerColumn ? 1 : sourceButton.visible ? 4 : 3
+        // Grid skips invisible children, so a hidden swap button leaves no gap.
+        columns: root.playerColumn ? 1 : 4
         spacing: Theme.spacingS
         x: root.playerSide === "left" ? edge : root.playerSide === "right" ? root.width - width - edge : (root.width - width) / 2
         // Row: under the sung line (a fifth of the space below lower), over the next ones while shown.
-        // Column: centred on the sung line. Both kept inside the widget.
+        // Column: the play button centred on the sung line. Both kept inside the widget.
         y: root.playerColumn
-            ? Math.min(root.height - height - Theme.spacingS, Math.max(minY, overlay.focusCentre - height / 2))
+            ? Math.min(root.height - height - Theme.spacingS, Math.max(minY, overlay.focusCentre - (prevButton.height + spacing + playButton.height / 2)))
             : Math.max(0, Math.min(overlay.focusBottom + Theme.spacingM + Math.max(0, root.height - overlay.focusBottom - height) * 0.2, root.height - height - Theme.spacingS))
         Behavior on x {
             NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
@@ -297,12 +303,20 @@ DesktopPluginComponent {
         Behavior on opacity {
             NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
         }
+        // A button's height (vertical) or width, stretched by factor along the buttons' axis:
+        // taller in a column, wider in a row.
+        function span(button, factor, vertical) {
+            const base = vertical ? button.buttonSize : button.iconSize + button.horizontalInset * 2;
+            return Math.round(base * (root.playerColumn === vertical ? factor : 1));
+        }
 
         DIconButton {
             size: "s"
             widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "tonal"
             id: prevButton
+            height: transport.span(prevButton, 1, true)
+            width: transport.span(prevButton, 1, false)
             iconName: "skip_previous"
             iconFilled: false
             enabled: !!root.player?.canGoPrevious || !!root.player?.canSeek
@@ -317,8 +331,8 @@ DesktopPluginComponent {
             widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "filled"
             // 1.5× as long as the others along the buttons' axis: taller in a column, wider in a row.
-            height: Math.round(buttonSize * (root.playerColumn ? 1.5 : 1))
-            width: Math.round((iconSize + horizontalInset * 2) * (root.playerColumn ? 1 : 1.5))
+            height: transport.span(playButton, 1.5, true)
+            width: transport.span(playButton, 1.5, false)
             round: false
             checkable: true
             checked: playing
@@ -333,6 +347,8 @@ DesktopPluginComponent {
             widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "tonal"
             id: nextButton
+            height: transport.span(nextButton, 1, true)
+            width: transport.span(nextButton, 1, false)
             iconName: "skip_next"
             iconFilled: false
             enabled: !!root.player?.canGoNext
@@ -356,9 +372,11 @@ DesktopPluginComponent {
             widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "tonal"
             // 0.75× along the buttons' axis, so the column steps 1, 1.5, 1, 0.75 around the play button.
-            height: Math.round(buttonSize * (root.playerColumn ? 0.75 : 1))
-            width: Math.round((iconSize + horizontalInset * 2) * (root.playerColumn ? 1 : 0.75))
-            visible: players.length > 1 && !root.pinnedPlaying
+            height: transport.span(sourceButton, 0.75, true)
+            width: transport.span(sourceButton, 0.75, false)
+            // Read by playerColumn: unlike visible, it ignores root or transport being hidden.
+            readonly property bool wanted: players.length > 1 && !root.pinnedPlaying
+            visible: wanted
             // Tertiary container: darker and set apart from the playback buttons.
             containerColor: Style.tertiaryContainer
             contentColor: Style.onTertiaryContainer
@@ -384,6 +402,10 @@ DesktopPluginComponent {
             item: nextButton
             radius: nextButton.radius
         }
+        Region {
+            item: sourceButton.visible ? sourceButton : null
+            radius: sourceButton.radius
+        }
     }
     function applyPlayerBlur() {
         const window = QsWindow.window;
@@ -403,6 +425,11 @@ DesktopPluginComponent {
         function onXChanged() { if (root.playerBlur) blurSettle.restart(); }
         function onYChanged() { if (root.playerBlur) blurSettle.restart(); }
         function onColumnsChanged() { if (root.playerBlur) blurSettle.restart(); }
+    }
+    // The swap button showing or hiding changes the region's children without moving transport.
+    Connections {
+        target: sourceButton
+        function onVisibleChanged() { if (root.playerBlur) blurSettle.restart(); }
     }
     Component.onCompleted: {
         applyPlayerBlur();
@@ -470,6 +497,7 @@ DesktopPluginComponent {
         }
 
         Column {
+            id: headerText
             anchors.verticalCenter: parent.verticalCenter
             width: Math.min(Math.max(title.implicitWidth, artist.implicitWidth), header.parent.width - 48 - Theme.spacingM * 3)
 
