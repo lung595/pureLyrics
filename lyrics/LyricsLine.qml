@@ -72,6 +72,7 @@ Item {
     property bool hangPunctuation: true
     // Shown when the lyrics do not say who sings: the track artist and featured artists.
     property string artistLabel: ""
+    property var credits: []
     // Pyramid: each line further from the sung one shrinks by this much more, toward the sung line.
     property real pyramid: 0
     property bool before: false
@@ -381,7 +382,7 @@ Item {
             readonly property var part: modelData.part
             readonly property int alignment: root.alignFor(part)
             readonly property color accent: root.accentFor(part)
-            readonly property string name: part.voiceName || root.artistLabel
+            readonly property string name: LyricsModel.singerFor(part, root.credits, root.artistLabel)
             readonly property bool named: !part.background && !!name
             property bool fresh: false
             readonly property bool shown: named && root.promoted && root.following && (root.singerName === "singing" || root.singerName === "hover" && root.pointerOver || root.singerName === "change" && fresh) && root.faceScale > 0.9

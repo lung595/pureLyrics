@@ -39,6 +39,7 @@ FocusScope {
     property real pyramid: 0
     property real distanceFade: 0
     property string artistLabel: ""
+    property var credits: []
     // Space reserved above a line whose singer chip can show, so the chip never covers the line
     // before. "change" names the singer when the voice changes, or after a break without voices.
     readonly property real chipHeight: Math.ceil(Theme.fontSizeSmall * 1.35) + Theme.spacingXS * 3
@@ -47,7 +48,7 @@ FocusScope {
     }
     function chipSpace(index) {
         const part = leadPart(index);
-        if (!part || singerName === "off" || !(part.voiceName || artistLabel))
+        if (!part || singerName === "off" || !LyricsModel.singerFor(part, credits, artistLabel))
             return 0;
         if (singerName !== "change")
             return chipHeight;
@@ -668,6 +669,7 @@ FocusScope {
                     pyramid: root.pyramid
                     distanceFade: root.distanceFade
                     artistLabel: root.artistLabel
+                    credits: root.credits
                     before: index < root.depthCentre
                     chipSpace: root.chipSpace(index)
                     depth: Math.abs(index - root.depthCentre)

@@ -247,3 +247,15 @@ function isRtl(text) {
     }
     return false;
 }
+
+// Who sings a part: the voice's own name, else the credited artist at the voice's number (v2 is the
+// second credit), else the track's artist for lyrics without voices. A voice with no matching credit,
+// or a group voice (v1000 and up), gets no name rather than the wrong one.
+function singerFor(part, credits, artistLabel) {
+    if (part.voiceName)
+        return part.voiceName;
+    if (!part.voice)
+        return artistLabel;
+    const number = Number(/^v(\d+)$/.exec(part.voice)?.[1] ?? 0);
+    return number > 0 && number < 1000 ? credits[number - 1] ?? "" : "";
+}

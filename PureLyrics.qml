@@ -56,10 +56,26 @@ DesktopPluginComponent {
     readonly property real pyramid: (pluginData.pyramid ?? 15) / 100
     readonly property real distanceFade: (pluginData.distanceFade ?? 0) / 100
     readonly property bool showAttribution: pluginData.showAttribution ?? true
+    // "feat." guests named in the title, e.g. "Song (ft. A et B)".
+    readonly property string titleGuest: /[(\[](?:feat\.?|ft\.?|with)\s+([^)\]]+)[)\]]/i.exec(player?.trackTitle ?? "")?.[1]?.trim() ?? ""
+    // Credited artists in order: the player's artist list, then the title's guests, without repeats.
+    // Unnamed voices of the lyrics are matched to it by number (v2 → second credit).
+    // shortcut: a single artist string like "A, B" stays one credit, since "Tyler, The Creator" holds a comma.
+    readonly property var credits: {
+        const listed = player?.metadata?.["xesam:artist"];
+        const artists = typeof listed === "object" && listed?.length > 0 ? Array.from(listed) : [player?.trackArtist ?? ""];
+        const guests = titleGuest.split(/\s*,\s*|\s+(?:&|et|and|x)\s+/i);
+        const names = [];
+        for (const name of artists.concat(guests).map(entry => String(entry).trim())) {
+            if (name && !names.some(known => known.toLowerCase() === name.toLowerCase()))
+                names.push(name);
+        }
+        return names;
+    }
     // Track artist plus a "feat." guest from the title when the artist field leaves it out.
     readonly property string artistLabel: {
         const artist = (player?.trackArtist ?? "").trim();
-        const guest = /[(\[](?:feat\.?|ft\.?|with)\s+([^)\]]+)[)\]]/i.exec(player?.trackTitle ?? "")?.[1]?.trim() ?? "";
+        const guest = titleGuest;
         if (!guest || artist.toLowerCase().includes(guest.toLowerCase()))
             return artist;
         return artist ? artist + " ft. " + guest : guest;
@@ -175,6 +191,7 @@ DesktopPluginComponent {
         pyramid: root.pyramid
         distanceFade: root.distanceFade
         artistLabel: root.artistLabel
+        credits: root.credits
         showAttribution: root.showAttribution
     }
 
@@ -304,6 +321,9 @@ DesktopPluginComponent {
             size: "s"
             widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "tonal"
+            // 0.75× along the buttons' axis, so the column steps 1, 1.5, 1, 0.75 around the play button.
+            height: Math.round(buttonSize * (root.playerColumn ? 0.75 : 1))
+            width: Math.round((iconSize + horizontalInset * 2) * (root.playerColumn ? 1 : 0.75))
             visible: players.length > 1
             // Tertiary container: darker and set apart from the playback buttons.
             containerColor: Style.tertiaryContainer
