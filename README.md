@@ -57,6 +57,8 @@ The sung fill takes the DMS theme colour (`Theme.primary`) instead of the cover-
 - DMS only corrects lyrics that drift more than 1 s from the player. The widget checks the
   player's position every 2 s while playing and corrects a drift past 0.2 s seen twice in a row.
 - The widget hides when no player is playing, and then drops its lyrics subscription.
+- While playback is paused the widget stays on screen as a still frame: clocks, glow and drift
+  checks stop, so it uses next to no CPU or GPU.
 
 ## Settings
 
@@ -72,7 +74,9 @@ lines' options in one-line mode. **Reset to defaults** sits at the bottom (click
     duet sides (first singer left, second right, when not on Auto), one line
   - *Other lines*: size, weight, shrink with distance (pyramid), fade with distance, spacing
 - **Player**
-  - *Buttons*: previous / play-pause / next, shown on hover or always, position (a row under the
+  - *Buttons*: previous / play-pause (1.5× along the row or column) / next, plus a switch-source
+    button when several players are open (it hands the lyrics to the next player), shown on hover
+    or always, position (a row under the
     sung line: centre, left, right or the lyrics' side; or a column beside it, left or right),
     cover side (the column's cover overhangs toward the lyrics, by default, or the edge), keep room on
     hover (a hover column keeps the lyrics clear of it too), column gap (for a column with room: the
@@ -87,7 +91,8 @@ lines' options in one-line mode. **Reset to defaults** sits at the bottom (click
   - *Card*: background and border opacity
 - **Info**
   - *Labels*: singer name chip (when the singer changes, while they sing, on hover, off; the artist
-    and featured artists when the lyrics do not name voices), cover and title until the first line
+    and featured artists when the lyrics have one singer; with several singers, unnamed voices take
+    the credited artists in order, skipping names the lyrics already give), cover and title until the first line
     (on the lyrics' side when aligned left or right), lyrics source credit under the lyrics
 
 Lyrics synced per line only (no word timings from the provider) get word timings estimated from
@@ -102,6 +107,10 @@ After updating the plugin, restart DMS (`dms restart`): Quickshell keeps the old
 cached across a plugin reload.
 
 Lyrics providers, sync and the followed player come from DMS Settings → Media.
+
+The widget follows the player that started playing last; Firefox's YouTube hover previews are
+ignored, and a pinned player (DMS Settings → Media) wins. Following or switching moves DMS's own
+active player too (bar and dash).
 
 ## Requirements
 
