@@ -8,7 +8,6 @@ import qs.Common
 import qs.Services
 import qs.Modules.Plugins
 import qs.Widgets
-import qs.DCommon.Common
 import qs.DCommon.Widgets
 import "lyrics"
 
@@ -377,9 +376,9 @@ DesktopPluginComponent {
             // Read by playerColumn: unlike visible, it ignores root or transport being hidden.
             readonly property bool wanted: players.length > 1 && !root.pinnedPlaying
             visible: wanted
-            // Tertiary container: darker and set apart from the playback buttons.
-            containerColor: Style.tertiaryContainer
-            contentColor: Style.onTertiaryContainer
+            // tertiaryContainer shares the tonal buttons' tone, so it is darkened to stand apart in both themes.
+            containerColor: Qt.darker(Theme.tertiaryContainer, 1.35)
+            contentColor: Theme.onTertiaryContainer
             iconName: "swap_horiz"
             iconFilled: false
             Accessible.name: I18n.tr("Switch source") + (nextPlayer?.identity ? ": " + nextPlayer.identity : "")
