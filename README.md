@@ -109,7 +109,7 @@ cached across a plugin reload.
 Lyrics providers, sync and the followed player come from DMS Settings → Media.
 
 The widget follows the player that started playing last; Firefox's YouTube hover previews are
-ignored, and a pinned player (DMS Settings → Media) wins. Following or switching moves DMS's own
+ignored, and a pinned player wins while it plays. Following or switching moves DMS's own
 active player too (bar and dash).
 
 ## Requirements

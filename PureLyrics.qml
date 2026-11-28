@@ -103,7 +103,7 @@ DesktopPluginComponent {
     // DMS keeps the current player while it plays; here the player that starts last takes the lyrics.
     // YouTube thumbnail previews in Firefox play too, so they are left out.
     // setActivePlayer moves DMS's global active player (bar, dash too) and writes lastPlayerIdentity;
-    // the pin is never touched, and with a pin set DMS picks the player itself, so nothing is followed.
+    // the pin is never touched, and while the pinned player plays DMS picks it, so nothing is followed.
     readonly property bool pinnedPlaying: MprisController.pinnedIdentity !== ""
         && MprisController.availablePlayers.some(p => p.isPlaying && (p.identity || "").toLowerCase().includes(MprisController.pinnedIdentity.toLowerCase()))
     // Set one event loop after startup, so players already playing then do not grab the lyrics at random.
@@ -125,7 +125,7 @@ DesktopPluginComponent {
             readonly property bool preview: MprisController.isFirefoxYoutubeHoverPreview(modelData)
             readonly property bool candidate: modelData.isPlaying && modelData.canControl && !preview
             function take() {
-                if (candidate && MprisController.pinnedIdentity === "" && modelData !== MprisController.activePlayer) {
+                if (candidate && !root.pinnedPlaying && modelData !== MprisController.activePlayer) {
                     root.previousPlayer = MprisController.activePlayer;
                     MprisController.setActivePlayer(modelData);
                 }
@@ -133,7 +133,7 @@ DesktopPluginComponent {
             onCandidateChanged: {
                 take();
                 const prev = root.previousPlayer;
-                if (preview && modelData === MprisController.activePlayer && MprisController.pinnedIdentity === ""
+                if (preview && modelData === MprisController.activePlayer && !root.pinnedPlaying
                         && prev && prev !== modelData && prev.isPlaying && MprisController.availablePlayers.indexOf(prev) >= 0)
                     MprisController.setActivePlayer(prev);
             }

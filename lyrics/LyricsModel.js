@@ -258,7 +258,8 @@ function voiceCredits(lines, credits) {
     const byVoice = [];
     numbers.forEach(number => {
         const own = credits[number - 1];
-        const pick = own && !used.has(own.toLowerCase()) ? own : credits.find(name => !used.has(name.toLowerCase()));
+        // No nth credit: no name, since a fallback could be v1's own artist spelled another way.
+        const pick = !own ? undefined : !used.has(own.toLowerCase()) ? own : credits.find(name => !used.has(name.toLowerCase()));
         if (pick) {
             byVoice[number - 1] = pick;
             used.add(pick.toLowerCase());
