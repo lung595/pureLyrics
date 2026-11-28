@@ -42,6 +42,8 @@ Item {
     // The move into the centre paces itself to the song, see LyricsController.prepareLines.
     readonly property int moveDuration: Math.round((item.move ?? DashMetrics.lyricsMoveMin) * 1000)
     readonly property bool isPlain: item.kind === "plain"
+    // Synced lines cast their shadow per row from a cached texture, so the sung line needs no face layer.
+    readonly property bool rowShadow: shadow && item.kind === "line"
     readonly property bool lit: promoted || lingering
     readonly property real shownClock: holding ? -1 : clock
     readonly property real breakProgress: isBreak ? Math.max(0, Math.min(1, (clock - item.t) / (item.e - item.t))) : 0
@@ -267,7 +269,7 @@ Item {
             }
         ]
         // Re-rendered only when this line's content changes, not while the view scrolls or shrinks.
-        layer.enabled: root.shadow || root.shownBlur > 0.01
+        layer.enabled: root.shownBlur > 0.01 || root.shadow && !root.rowShadow
         layer.smooth: true
         layer.mipmap: true
         layer.effect: MultiEffect {
@@ -275,7 +277,7 @@ Item {
             blurEnabled: root.shownBlur > 0.01
             blur: root.shownBlur
             blurMax: 24
-            shadowEnabled: root.shadow
+            shadowEnabled: root.shadow && !root.rowShadow
             shadowColor: Qt.rgba(0, 0, 0, 0.55)
             shadowBlur: 0.6
             shadowVerticalOffset: 2
@@ -462,6 +464,34 @@ Item {
     }
     }
 
+    // A word's rise, shared by its fill and its shadow slice so both move in lock-step.
+    component WordRise: Item {
+        id: wordRise
+
+        required property var modelData
+        readonly property bool started: root.shownClock >= modelData.t
+        property real rise: 0
+
+        Component.onCompleted: rise = started ? 1 : 0
+        onStartedChanged: {
+            riseAnimation.stop();
+            if (!started) {
+                rise = 0;
+                return;
+            }
+            riseAnimation.duration = Math.max(280, Math.min(1600, (modelData.e - root.shownClock) * 1000));
+            riseAnimation.start();
+        }
+        NumberAnimation {
+            id: riseAnimation
+            target: wordRise
+            property: "rise"
+            to: 1
+            easing.type: Easing.OutCubic
+            paused: running && !root.playing
+        }
+    }
+
     component LyricsPart: Item {
         id: lyricsPart
 
@@ -579,6 +609,86 @@ Item {
                     sourceItem: glyphs
                     hideSource: true
                     smooth: true
+                    // Keeps shrunk lines without a face layer as smooth as the mipmapped layer did.
+                    mipmap: true
+                }
+
+                // Room for the shadow blur spill (0.6 x blurMax 24) plus its 2 px offset.
+                readonly property int shadowPad: 16
+                // Blurred once from a hidden copy of the glyphs, never per frame. A blur fed by glyphSource
+                // comes out empty when captured again, hence the copy.
+                StyledText {
+                    id: shadowGlyphs
+                    visible: false
+                    width: row.width
+                    height: row.height
+                    text: glyphs.text
+                    font: glyphs.font
+                    horizontalAlignment: glyphs.horizontalAlignment
+                    color: glyphs.color
+                    wrapMode: Text.NoWrap
+                    Accessible.ignored: true
+                }
+
+                Item {
+                    id: shadowHolder
+                    x: -row.shadowPad
+                    y: -row.shadowPad
+                    width: row.width + 2 * row.shadowPad
+                    height: row.height + 2 * row.shadowPad
+                    visible: root.rowShadow
+
+                    MultiEffect {
+                        x: row.shadowPad
+                        y: row.shadowPad
+                        width: row.width
+                        height: row.height
+                        source: shadowGlyphs
+                        blurEnabled: true
+                        blur: 0.6
+                        blurMax: 24
+                        colorization: 1
+                        colorizationColor: "black"
+                        autoPaddingEnabled: false
+                        paddingRect: Qt.rect(row.shadowPad, row.shadowPad, row.shadowPad, row.shadowPad)
+                    }
+                }
+
+                ShaderEffectSource {
+                    id: shadowSource
+                    sourceItem: root.rowShadow ? shadowHolder : null
+                    hideSource: true
+                    smooth: true
+                }
+
+                // Shadow slices rise with their words, under the glow and the fill as the face shadow was.
+                Repeater {
+                    id: shadowSlices
+                    model: root.rowShadow ? row.words : []
+
+                    WordRise {
+                        id: slice
+
+                        required property int index
+                        readonly property real padLeft: index === 0 ? row.shadowPad : 0
+
+                        x: modelData.a - padLeft
+                        y: -row.shadowPad
+                        width: modelData.b - modelData.a + padLeft + (index === shadowSlices.count - 1 ? row.shadowPad : 0)
+                        height: row.height + 2 * row.shadowPad
+                        clip: true
+                        opacity: 0.55
+                        transform: Translate {
+                            y: 2 - row.height * 0.08 * slice.rise * row.floatAmount
+                        }
+
+                        ShaderEffect {
+                            x: -slice.x - row.shadowPad
+                            width: row.width + 2 * row.shadowPad
+                            height: slice.height
+                            property var source: shadowSource
+                        }
+                    }
                 }
 
                 MultiEffect {
@@ -606,13 +716,10 @@ Item {
                 Repeater {
                     model: row.words
 
-                    Item {
+                    WordRise {
                         id: word
 
-                        required property var modelData
-                        readonly property bool started: root.shownClock >= modelData.t
                         readonly property bool singing: started && root.shownClock < modelData.e
-                        property real rise: 0
                         property real shine: singing && row.floatAmount > 0 ? 1 : 0
 
                         x: modelData.a
@@ -623,24 +730,6 @@ Item {
                             y: -row.height * 0.08 * word.rise * row.floatAmount
                         }
 
-                        Component.onCompleted: rise = started ? 1 : 0
-                        onStartedChanged: {
-                            riseAnimation.stop();
-                            if (!started) {
-                                rise = 0;
-                                return;
-                            }
-                            riseAnimation.duration = Math.max(280, Math.min(1600, (modelData.e - root.shownClock) * 1000));
-                            riseAnimation.start();
-                        }
-                        NumberAnimation {
-                            id: riseAnimation
-                            target: word
-                            property: "rise"
-                            to: 1
-                            easing.type: Easing.OutCubic
-                            paused: running && !root.playing
-                        }
                         Behavior on shine {
                             NumberAnimation {
                                 duration: word.singing ? 180 : 700
