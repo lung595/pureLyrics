@@ -8,6 +8,7 @@ import qs.Common
 import qs.Services
 import qs.Modules.Plugins
 import qs.Widgets
+import qs.DCommon.Common
 import qs.DCommon.Widgets
 import "lyrics"
 
@@ -81,6 +82,20 @@ DesktopPluginComponent {
     minHeight: 60
 
     readonly property var player: MprisController.activePlayer
+
+    // DMS keeps the current player while it plays; here the player that starts last takes the lyrics.
+    // YouTube thumbnail previews in Firefox play too, so they are left out.
+    Instantiator {
+        model: MprisController.availablePlayers
+        delegate: QtObject {
+            required property MprisPlayer modelData
+            readonly property bool playing: modelData.isPlaying
+            onPlayingChanged: {
+                if (playing && modelData !== MprisController.activePlayer && !MprisController.isFirefoxYoutubeHoverPreview(modelData))
+                    MprisController.setActivePlayer(modelData);
+            }
+        }
+    }
     // Hidden when nothing plays; the overlay then drops its LyricsService subscription too.
     opacity: !!player && player.playbackState !== MprisPlaybackState.Stopped ? 1 : 0
     visible: opacity > 0
@@ -207,7 +222,7 @@ DesktopPluginComponent {
         id: transport
         readonly property real edge: Math.max(Theme.spacingM, overlay.shapeInset)
         readonly property real minY: (header.visible ? header.y + header.height + Theme.spacingS : Theme.spacingS) + (columnCover.visible ? columnCover.height + spacing : 0)
-        columns: root.playerColumn ? 1 : 3
+        columns: root.playerColumn ? 1 : sourceButton.visible ? 4 : 3
         spacing: Theme.spacingS
         x: root.playerSide === "left" ? edge : root.playerSide === "right" ? root.width - width - edge : (root.width - width) / 2
         // Row: under the sung line (a fifth of the space below lower), over the next ones while shown.
@@ -257,6 +272,9 @@ DesktopPluginComponent {
             size: "s"
             widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "filled"
+            // 1.5× as long as the others along the buttons' axis: taller in a column, wider in a row.
+            height: Math.round(buttonSize * (root.playerColumn ? 1.5 : 1))
+            width: Math.round((iconSize + horizontalInset * 2) * (root.playerColumn ? 1 : 1.5))
             round: false
             checkable: true
             checked: playing
@@ -276,6 +294,24 @@ DesktopPluginComponent {
             enabled: !!root.player?.canGoNext
             Accessible.name: I18n.tr("Next")
             onClicked: MprisController.next()
+        }
+
+        // Shown only with several players (Spotify, a browser tab...): a click hands lyrics to the next one.
+        // setActivePlayer, not setPinned, so DMS's own player choice is left as the user set it.
+        DIconButton {
+            id: sourceButton
+            readonly property var players: MprisController.availablePlayers
+            size: "s"
+            widthMode: root.playerColumn ? "narrow" : "wide"
+            variant: "tonal"
+            visible: players.length > 1
+            // Tertiary container: darker and set apart from the playback buttons.
+            containerColor: Style.tertiaryContainer
+            contentColor: Style.onTertiaryContainer
+            iconName: "swap_horiz"
+            iconFilled: false
+            Accessible.name: I18n.tr("Switch source") + ": " + (root.player?.identity ?? "")
+            onClicked: MprisController.setActivePlayer(players[(players.indexOf(root.player) + 1) % players.length])
         }
     }
 
