@@ -101,15 +101,42 @@ DesktopPluginComponent {
 
     // DMS keeps the current player while it plays; here the player that starts last takes the lyrics.
     // YouTube thumbnail previews in Firefox play too, so they are left out.
+    // setActivePlayer moves DMS's global active player (bar, dash too) and writes lastPlayerIdentity;
+    // the pin is never touched, and with a pin set DMS picks the player itself, so nothing is followed.
+    readonly property bool pinnedPlaying: MprisController.pinnedIdentity !== ""
+        && MprisController.availablePlayers.some(p => p.isPlaying && (p.identity || "").toLowerCase().includes(MprisController.pinnedIdentity.toLowerCase()))
+    // Set one event loop after startup, so players already playing then do not grab the lyrics at random.
+    property bool ready: false
+    // availablePlayers is rebuilt on every join/leave and the Instantiator recreates all delegates;
+    // only a player missing from this list (refreshed after the rebuild) is new and may take the lyrics.
+    property var knownPlayers: []
+    Connections {
+        target: MprisController
+        function onAvailablePlayersChanged() { Qt.callLater(() => root.knownPlayers = MprisController.availablePlayers.slice()); }
+    }
+    // The player a follow took over from, handed back if the new one turns out to be a hover preview.
+    property var previousPlayer: null
     Instantiator {
         model: MprisController.availablePlayers
         delegate: QtObject {
             required property MprisPlayer modelData
-            readonly property bool playing: modelData.isPlaying
-            onPlayingChanged: {
-                if (playing && modelData !== MprisController.activePlayer && !MprisController.isFirefoxYoutubeHoverPreview(modelData))
+            // Re-evaluated when xesam:url arrives late, so a preview is caught after it started playing.
+            readonly property bool preview: MprisController.isFirefoxYoutubeHoverPreview(modelData)
+            readonly property bool candidate: modelData.isPlaying && modelData.canControl && !preview
+            function take() {
+                if (candidate && MprisController.pinnedIdentity === "" && modelData !== MprisController.activePlayer) {
+                    root.previousPlayer = MprisController.activePlayer;
                     MprisController.setActivePlayer(modelData);
+                }
             }
+            onCandidateChanged: {
+                take();
+                const prev = root.previousPlayer;
+                if (preview && modelData === MprisController.activePlayer && MprisController.pinnedIdentity === ""
+                        && prev && prev !== modelData && prev.isPlaying && MprisController.availablePlayers.indexOf(prev) >= 0)
+                    MprisController.setActivePlayer(prev);
+            }
+            Component.onCompleted: if (root.ready && root.knownPlayers.indexOf(modelData) < 0) take()
         }
     }
     // Hidden when nothing plays; the overlay then drops its LyricsService subscription too.
@@ -314,24 +341,31 @@ DesktopPluginComponent {
         }
 
         // Shown only with several players (Spotify, a browser tab...): a click hands lyrics to the next one.
-        // setActivePlayer, not setPinned, so DMS's own player choice is left as the user set it.
+        // setActivePlayer moves DMS's global active player (bar, dash too) and writes lastPlayerIdentity;
+        // the pin is never touched. A playing pinned player wins in DMS, so the button hides then.
         DIconButton {
             id: sourceButton
-            readonly property var players: MprisController.availablePlayers
+            // Paused players are offered only when none plays: DMS reverts a swap to a paused one.
+            readonly property var players: {
+                const live = MprisController.availablePlayers.filter(p => p.playbackState !== MprisPlaybackState.Stopped && p.canControl && !MprisController.isFirefoxYoutubeHoverPreview(p));
+                const playing = live.filter(p => p.isPlaying);
+                return playing.length > 0 ? playing : live;
+            }
+            readonly property var nextPlayer: players.length > 0 ? players[(players.indexOf(root.player) + 1) % players.length] : null
             size: "s"
             widthMode: root.playerColumn ? "narrow" : "wide"
             variant: "tonal"
             // 0.75× along the buttons' axis, so the column steps 1, 1.5, 1, 0.75 around the play button.
             height: Math.round(buttonSize * (root.playerColumn ? 0.75 : 1))
             width: Math.round((iconSize + horizontalInset * 2) * (root.playerColumn ? 1 : 0.75))
-            visible: players.length > 1
+            visible: players.length > 1 && !root.pinnedPlaying
             // Tertiary container: darker and set apart from the playback buttons.
             containerColor: Style.tertiaryContainer
             contentColor: Style.onTertiaryContainer
             iconName: "swap_horiz"
             iconFilled: false
-            Accessible.name: I18n.tr("Switch source") + ": " + (root.player?.identity ?? "")
-            onClicked: MprisController.setActivePlayer(players[(players.indexOf(root.player) + 1) % players.length])
+            Accessible.name: I18n.tr("Switch source") + (nextPlayer?.identity ? ": " + nextPlayer.identity : "")
+            onClicked: if (nextPlayer) MprisController.setActivePlayer(nextPlayer)
         }
     }
 
@@ -370,7 +404,13 @@ DesktopPluginComponent {
         function onYChanged() { if (root.playerBlur) blurSettle.restart(); }
         function onColumnsChanged() { if (root.playerBlur) blurSettle.restart(); }
     }
-    Component.onCompleted: applyPlayerBlur()
+    Component.onCompleted: {
+        applyPlayerBlur();
+        Qt.callLater(() => {
+            knownPlayers = MprisController.availablePlayers.slice();
+            ready = true;
+        });
+    }
     Component.onDestruction: {
         const window = QsWindow.window;
         if (window?.BackgroundEffect)
